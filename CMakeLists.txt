@@ -39,7 +39,7 @@ endif()
 set( RP_PASTIX_DICTIONNARY ${MORSE_CMAKE_MODULE_PATH}/precision_generator/subs.py )
 set( RP_PASTIX_PRECISIONS  "p;s;d;c;z" )
 include(RulesPrecisions)
-
+set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
 ### System parameter detection
 include(CheckSystem)
 
