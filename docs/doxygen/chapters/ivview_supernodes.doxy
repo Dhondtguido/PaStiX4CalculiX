@@ -1,0 +1,32 @@
+/*
+ * This file is part of the PaStiX Handbook.
+ * Copyright 1998-2018 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+ *                      Univ. Bordeaux. All rights reserved.
+ */
+
+/*! \page Drawing supernodes using ivview
+
+To be able to output an ivview file representing the first separator,
+orderDraw() has to be used together with the .xyz file representing
+the coordinates of each unknown. Such a .xyz file can be generated
+using scotch, for instance for a 40^3 Laplacian:
+
+\verbatim
+SCOTCH_BIN_DIR/gmk_m3 40 40 40 grid40.grf -ggrid40.xyz
+ln -sfn grid40.xyz before.xyz
+\endverbatim
+
+Then, PastixDriverGraph has to used used through -G option:
+
+\verbatim
+./example/simple -G grid40.grf
+\endverbatim
+
+Finally, orderDraw() computes several files and the final .iv file can
+be obtained through:
+
+\verbatim
+SCOTCH_BIN_DIR/gout part.grf part.xyz part.map part.iv
+\endverbatim
+
+*/

@@ -1,0 +1,87 @@
+image: hpclib/hiepacs
+
+stages:
+  - build
+  - test
+  - sonar
+#  - deploy
+
+build_spm:
+  stage: build
+  artifacts:
+    name: spm_build
+    expire_in: 42 minutes
+    untracked: true
+  script:
+    - git submodule update --init --recursive
+    - mkdir build
+    - cd build
+    - cmake .. -DCMAKE_INSTALL_PREFIX=${PWD}/../install -DBUILD_SHARED_LIBS=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_C_FLAGS="-O0 -g -fPIC --coverage -Wall -fdiagnostics-show-option -fno-inline" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DSPM_INT64=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    - make -j 4 | tee ../pastix-build.log
+    - make install | tee -a ../pastix-build.log
+  only:
+    - branches
+    - master@solverstack/spm
+
+test_spm:
+  stage: test
+  dependencies:
+    - build_spm
+  artifacts:
+    name: spm_test
+    expire_in: 42 minutes
+    paths:
+      - spm.lcov
+      - spm-gcov.log
+  script:
+    - git submodule update --init --recursive
+    - source install/bin/spm_env.sh
+    - (cd build &&
+       eval "ctest
+             $TESTS_RESTRICTION
+             -D ExperimentalTest
+             -D ExperimentalCoverage
+             -D ExperimentalSubmit
+             | tee -a ../spm-build.log")
+    - lcov --directory build --capture --output-file spm.lcov
+    - gcovr -r $PWD | tee spm-gcov.log
+  only:
+    - branches
+    - master@solverstack/spm
+
+sonar_spm:
+  stage: sonar
+  dependencies:
+    - build_spm
+    - test_spm
+  artifacts:
+    name: spm_sonar
+    expire_in: 1 week
+    paths:
+      - spm.lcov
+      - spm-coverage.xml
+      - spm-cppcheck.xml
+      - spm-rats.xml
+      - sonar.log
+  script:
+    - ./tools/analysis.sh
+  only:
+    - master@solverstack/spm
+
+# pages:
+#   stage: deploy
+#   dependencies:
+#     - build_spm
+#   artifacts:
+#     paths:
+#     - public
+#   script:
+#     - git submodule update --init --recursive
+#     - mkdir -p build
+#     - cd build
+#     - cmake .. -DBUILD_DOCUMENTATION=ON -DSPM_INT64=OFF
+#     - make docs
+#     - mv docs/out/html ../public/
+#   only:
+#     - master@solverstack/spm
+

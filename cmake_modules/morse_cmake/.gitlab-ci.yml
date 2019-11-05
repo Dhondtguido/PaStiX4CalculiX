@@ -1,0 +1,15 @@
+image: hpclib/hiepacs
+
+Find:
+  artifacts:
+    name: find_ctests
+    expire_in: 1 week
+    paths:
+     - modules/find/tests/build/Testing/
+  script:
+    - source /etc/profile.d/spack.sh
+    - cd modules/find/tests
+    - mkdir -p build
+    - cd build
+    - cmake .. -DENABLE_CTEST=ON -DLAPACKE_COMPONENTS="TMG" -DQUARK_COMPONENTS="HWLOC" -DCHAMELEON_COMPONENTS="MPI;FXT;STARPU"
+    - ctest -V
