@@ -39,21 +39,21 @@
     "    CPU: %41s\n"                                           \
     "    GPU: %41s\n"                                           \
     "  Low rank parameters:\n"                                  \
-    "    Strategy                      %16s\n"
+    "    Strategy:                      %16s\n"
 
 #define OUT_HEADER_LR                                           \
-    "    Tolerance                             %8.0e\n"         \
-    "    Compress method                       %8s\n"           \
-    "    Compress minimal width                %8ld\n"          \
-    "    Compress minimal height               %8ld\n"          \
-    "    Compress min ratio                    %8f\n"           \
-    "    Orthogonalization method              %8s\n"           \
-    "    Splitting Strategy                    %8s\n"           \
-    "    Levels of projections                 %8ld\n"          \
-    "    Levels of kway                        %8ld\n"          \
-    "    Projections distance                  %8ld\n"          \
-    "    Projections depth                     %8ld\n"          \
-    "    Projections width                     %8ld\n"
+    "    Tolerance:                            %8.0e\n"         \
+    "    Compress method:                      %8s\n"           \
+    "    Compress minimal width:               %8ld\n"          \
+    "    Compress minimal height:              %8ld\n"          \
+    "    Compress min ratio:                   %8f\n"           \
+    "    Orthogonalization method:             %8s\n"           \
+    "    Splitting Strategy:                   %8s\n"           \
+    "    Levels of projections:                %8ld\n"          \
+    "    Levels of kway:                       %8ld\n"          \
+    "    Projections distance:                 %8ld\n"          \
+    "    Projections depth:                    %8ld\n"          \
+    "    Projections width.                    %8ld\n"
 
 #define OUT_STEP_ORDER                                          \
     "+-------------------------------------------------+\n"     \
@@ -71,7 +71,7 @@
 #define OUT_ORDER_METHOD                        \
     "    Ordering method is: %s\n"
 #define OUT_ORDER_TIME                                  \
-    "    Time to compute ordering              %e s\n"
+    "    Time to compute ordering:              %.4lf \n"
 
 #define OUT_STEP_FAX                                            \
     "+-------------------------------------------------+\n"     \
@@ -79,29 +79,29 @@
 #define OUT_FAX_METHOD                          \
     "    Symbol factorization using: %s\n"
 #define OUT_FAX_SUMMARY                                                 \
-    "    Number of nonzeroes in L structure    %8ld\n"                  \
-    "    Fill-in of L                          %8lf\n"                  \
-    "    Time to compute symbol matrix         %e s\n"
+    "    Number of nonzeroes in L structure:   %8ld\n"                  \
+    "    Fill-in of L:                         %8lf\n"                  \
+    "    Time to compute symbol matrix:        %.4lf \n"
 
 
 #define OUT_STEP_REORDER                                        \
     "+-------------------------------------------------+\n"     \
     "  Reordering step:\n"                                      \
-    "    Split level                           %8ld\n"          \
-    "    Stoping criteria                      %8ld\n"
+    "    Split level:                          %8ld\n"          \
+    "    Stoping criteria:                     %8ld\n"
 #define OUT_REORDERING_TIME                             \
-    "    Time for reordering                   %e s\n"
+    "    Time for reordering:                  %.4lf \n"
 #define OUT_REORDERING_OPS                                              \
-    "    Iops for the last supernode           %8ld ( %5.2lf%% )\n"     \
-    "    Iops for the reordering               %8ld\n"
+    "    Iops for the last supernode:          %8ld ( %5.2lf%% )\n"     \
+    "    Iops for the reordering:              %8ld\n"
 
 #define OUT_STEP_BLEND                                          \
     "+-------------------------------------------------+\n"     \
     "  Analyse step:\n"
 #define OUT_BLEND_CONF                                  \
-    "    Number of cluster                     %8ld\n"  \
-    "    Number of processor per cluster       %8ld\n"  \
-    "    Number of thread per MPI process      %8ld\n"
+    "    Number of cluster:                    %8ld\n"  \
+    "    Number of processor per cluster:      %8ld\n"  \
+    "    Number of thread per MPI process:     %8ld\n"
 
 #define OUT_BLEND_CHKSMBMTX                     \
     "    Check the symbol matrix\n"
@@ -110,49 +110,49 @@
 #define OUT_BLEND_ELIMTREE                      \
     "    Building elimination tree\n"
 #define OUT_BLEND_ELIMTREE_TIME                         \
-    "    Elimination tree built in             %e s\n"
+    "    Elimination tree built in             %.4lf \n"
 #define OUT_BLEND_COSTMATRIX                    \
     "    Building cost matrix\n"
 #define OUT_BLEND_COSTMATRIX_TIME                       \
-    "    Cost matrix built in                  %e s\n"
+    "    Cost matrix built in                  %.4lf \n"
 #define OUT_BLEND_ELIMTREE_TOTAL_COST                   \
-    "    Total estimated cost of the etree     %e s\n"
+    "    Total estimated cost of the etree     %.4lf \n"
 #define OUT_BLEND_PROPMAP                       \
     "    Perform proportional mapping\n"
 #define OUT_BLEND_PROPMAP_TIME                          \
-    "    Proportional mapping done in          %e s\n"
+    "    Proportional mapping done in          %.4lf \n"
 #define OUT_BLEND_SPLITSYMB                     \
     "    Split large symbolic blocks\n"
 #define OUT_BLEND_SPLITSYMB_TIME                        \
-    "    Symbol split done in                  %e s\n"
+    "    Symbol split done in                  %.4lf \n"
 #define OUT_BLEND_BUILDSIMU                     \
     "    Build simulation structures\n"
 #define OUT_BLEND_BUILDSIMU_TIME                        \
-    "    Simulation structures built in        %e s\n"  \
+    "    Simulation structures built in        %.4lf \n"  \
     "    Number of tasks found                 %8ld\n"
 #define OUT_BLEND_SIMU                                  \
     "    Start simulation (Data distribution)\n"
 #define OUT_BLEND_SIMU_TIME                             \
-    "    Simulation done in                    %e s\n"
+    "    Simulation done in                    %.4lf \n"
 #define OUT_BLEND_ELIMGRAPH                     \
     "    Building elimination graph\n"
 #define OUT_BLEND_ELIMGRAPH_TIME                        \
-    "    Elimination graph built in            %e s\n"
+    "    Elimination graph built in            %.4lf \n"
 #define OUT_BLEND_SOLVER                        \
     "    Building solver structure\n"
 #define OUT_BLEND_SOLVER_TIME                           \
-    "    Solver built in                       %e s\n"
+    "    Solver built in                       %.4lf \n"
 #define OUT_BLEND_TIME                                  \
-    "    Time for analyze                      %e s\n"
+    "    Time for analyze                      %.4lf \n"
 
 #define OUT_BLEND_SUMMARY                                               \
-    "    Number of non-zeroes in blocked L     %8ld\n"                  \
-    "    Fill-in                               %8lf\n"                  \
-    "    Number of operations in full-rank: %-5s    %5.2lf %cFlops\n"   \
+    "    Number of non-zeroes in blocked L:    %8ld\n"                  \
+    "    Fill-in:                              %8lf\n"                  \
+    "    Number of operations in full-rank %-5s:    %5.2lf %cFlops\n"   \
     "    Prediction:\n"                                                 \
-    "      Model                       %20s\n"                          \
-    "      Time to factorize                   %e s\n"                  \
-    "    Time for analyze                      %e s\n"
+    "      Model:                      %20s\n"                          \
+    "      Time to factorize:                  %.4lf \n"                  \
+    "    Time for analyze:                     %.4lf \n"
 
 #define OUT_STEP_SOPALIN                                          \
     "+-------------------------------------------------+\n"     \
@@ -160,20 +160,20 @@
     "    Factorization used: %s\n"
 
 #define OUT_BCSC_TIME                                   \
-    "    Time to initialize internal csc       %e s\n"
+    "    Time to initialize internal csc:      %.4lf \n"
 
 #define OUT_COEFTAB_TIME                                \
-    "    Time to initialize coeftab            %e s\n"
+    "    Time to initialize coeftab:           %.4lf \n"
 
 #define OUT_SOPALIN_TIME                                                \
-    "    Time to factorize                     %e s (%5.2lf %cFlop/s)\n" \
-    "    Number of operations                       %5.2lf %cFlops\n"   \
-    "    Number of static pivots               %8ld\n"
+    "    Time to factorize:                    %.4lf  (%5.2lf %cFlop/s)\n" \
+    "    Number of operations:                      %5.2lf %cFlops\n"   \
+    "    Number of static pivots:              %8ld\n"
 
 #define OUT_LOWRANK_SUMMARY                                     \
     "    Compression:\n"                                        \
-    "      Elements removed             %8ld / %8ld\n"          \
-    "      Memory saved              %.3g %co / %.3g %co\n"
+    "      Elements removed:            %8ld / %8ld\n"          \
+    "      Memory saved:             %.3g %co / %.3g %co\n"
 
 #define OUT_STARPU_TP         " StarPU : Thread policy : %s\n"
 #define OUT_STARPU_STP        " StarPU : No thread policy, setting thread policy to : %s\n"
@@ -185,14 +185,14 @@
 #define OUT_GLOBAL_THFLOPCNT  "   Number of theoretical flop            %.5g %cflops\n"
 #define OUT_GLOBAL_RLFLOPCNT  "   Number of performed flop              %.5g %cflops\n"
 
-#define TIME_TO_ANALYSE       "   Time to analyze                              %.3g s\n"
+#define TIME_TO_ANALYSE       "   Time to analyze                              %.3g \n"
 #define NNZERO_WITH_FILLIN_TH "   Number of nonzeros in factorized matrix      %ld\n"
 #define NNZERO_WITH_FILLIN    "%d : Number of nonzeros (local block structure) %ld\n"
 #define SOLVMTX_WITHOUT_CO    "%d : SolverMatrix size (without coefficients)   %.3g %s\n"
 #define OUT_FILLIN_TH         "   Fill-in                                      %lg\n"
 #define NUMBER_OP_LU          "   Number of operations (LU)                    %g\n"
 #define NUMBER_OP_LLT         "   Number of operations (LLt)                   %g\n"
-#define TIME_FACT_PRED        "   Prediction Time to factorize (%s) %.3g s\n"
+#define TIME_FACT_PRED        "   Prediction Time to factorize (%s) %.3g \n"
 #define OUT_COEFSIZE          "   Maximum coeftab size (cefficients)           %.3g %co\n"
 #define OUT_REDIS_CSC         "   Redistributing user CSC into PaStiX distribution\n"
 #define OUT_REDIS_RHS         "   Redistributing user RHS into PaStiX distribution\n"
@@ -206,9 +206,9 @@
 #define OUT2_FUN_STATS        "     - %3ld : Envois %5ld - Receptions %5ld          -\n"
 #define OUT2_SOP_BSOP         "   --- Sopalin Begin                                ---\n"
 #define OUT2_SOP_ESOP         "   --- Sopalin End                                  ---\n"
-#define OUT4_UPDO_TIME_INIT   " [%d][%d] Solve initialization time : %lg s\n"
-#define OUT4_UPDO_COMM_TIME   " [%d][%d] Solve communication time : %lg s\n"
-#define OUT4_FACT_COMM_TIME   " [%d][%d] Factorization communication time : %lg s\n"
+#define OUT4_UPDO_TIME_INIT   " [%d][%d] Solve initialization time : %lg \n"
+#define OUT4_UPDO_COMM_TIME   " [%d][%d] Solve communication time : %lg \n"
+#define OUT4_FACT_COMM_TIME   " [%d][%d] Factorization communication time : %lg \n"
 #define OUT2_SOP_DOWN         "   --- Down Step                                    ---\n"
 #define OUT2_SOP_DIAG         "   --- Diag Step                                    ---\n"
 #define OUT2_SOP_UP           "   --- Up Step                                      ---\n"
@@ -220,28 +220,28 @@
 #define OUT_ITERREFINE_BICGSTAB "   BICGSTAB :\n"
 #define OUT_ITERREFINE_GRAD     "   Conjuguate gradient :\n"
 #define OUT_ITERREFINE_ITER     "    - iteration %d :\n"
-#define OUT_ITERREFINE_TTS      "         time to solve                          %.3g s\n"
-#define OUT_ITERREFINE_TTT      "         total iteration time                   %.3g s\n"
+#define OUT_ITERREFINE_TTS      "         time to solve                          %.3g \n"
+#define OUT_ITERREFINE_TTT      "         total iteration time                   %.3g \n"
 #define OUT_ITERREFINE_ERR      "         error                                  %.5g\n"
 #define OUT_ITERREFINE_NORMA    "         ||A||                                  %.5g\n"
 #define OUT_ITERREFINE_NORMR    "         ||r||                                  %.5g\n"
 #define OUT_ITERREFINE_NORMB    "         ||b||                                  %.5g\n"
 #define OUT_ITERREFINE_BDIVR    "         ||r||/||b||                            %.5g\n"
-#define OUT_REDISCSCDTIME     "   Time to redistribute cscd                    %.3g s\n"
-#define OUT_FILLCSCTIME       "   Time to fill internal csc                    %.3g s\n"
+#define OUT_REDISCSCDTIME     "   Time to redistribute cscd                    %.3g \n"
+#define OUT_FILLCSCTIME       "   Time to fill internal csc                    %.3g \n"
 #define OUT_MAX_MEM_AF_SOP    "   Max memory used after factorization          %.3g %s\n"
 #define OUT_MEM_USED_AF_SOP   "   Memory used after factorization              %.3g %s\n"
 #define MAX_MEM_AF_CL         "   Max memory used after clean                  %.3g %s\n"
 #define MEM_USED_AF_CL        "   Memory used after clean                      %.3g %s\n"
 #define OUT_STATIC_PIVOTING   "   Static pivoting                              %ld\n"
 #define OUT_ESP_NBTASKS       "   Number of tasks added by esp                 %ld\n"
-#define OUT_TIME_FACT         "   Time to factorize                            %.3g s  (%.3g %s)\n"
+#define OUT_TIME_FACT         "   Time to factorize                            %.3g   (%.3g %s)\n"
 #define OUT_FLOPS_FACT        "   FLOPS during factorization                   %.5g %s\n"
-#define OUT_TIME_SOLV         "    Time to solve                         %e s\n"
-#define OUT_REFINE_ITER_NORM  "    Refinement                            %ld iterations, norm=%e\n"
-#define OUT_PREC1             "    ||b-Ax||/||b||                        %e\n"
-#define OUT_PREC2             "    max_i(|b-Ax|_i/(|b| + |A||x|)_i       %e\n"
-#define OUT_TIME_REFINE       "    Time for refinement                   %e s\n"
+#define OUT_TIME_SOLV         "    Time to solve:                        %.4lf \n"
+#define OUT_REFINE_ITER_NORM  "    Refinement:                           %ld iterations, norm=%.4lf\n"
+#define OUT_PREC1             "    ||b-Ax||/||b||:                       %.4lf\n"
+#define OUT_PREC2             "    max_i(|b-Ax|_i/(|b| + |A||x|)_i:      %.4lf\n"
+#define OUT_TIME_REFINE       "    Time for refinement:                  %.4lf \n"
 #define OUT_END               " +--------------------------------------------------------------------+\n"
 
 /*
