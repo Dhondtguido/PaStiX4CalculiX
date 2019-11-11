@@ -434,6 +434,7 @@ pastixGetOptions( int argc, char **argv,
                   int *check, spm_driver_t *driver, char **filename )
 {
     int c;
+    char file[] = "/A.mtx";
     (void)dparam;
 
     if (argc == 1) {
@@ -469,6 +470,7 @@ pastixGetOptions( int argc, char **argv,
         case '3':
             *driver = SpmDriverMM;
             *filename = strdup( optarg );
+            strncat(*filename, file, 6);
             break;
 
         case '4':
