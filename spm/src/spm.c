@@ -1383,6 +1383,44 @@ spmScalMatrix(double alpha, spmatrix_t* spm)
 /**
  *******************************************************************************
  *
+ * @brief Degrade the spm.
+ *
+ * A = alpha * A
+ *
+ *******************************************************************************
+ *
+ * @param[in] alpha
+ *           The scaling parameter.
+ *
+ * @param[inout] spm
+ *          The sparse matrix to scal.
+ *
+ *******************************************************************************/
+void
+spmDegradeMatrix(spmatrix_t* spm)
+{
+    switch(spm->flttype)
+    {
+    case SpmPattern:
+        break;
+    case SpmFloat:
+        s_spmDegrade(spm);
+        break;
+    case SpmComplex32:
+        c_spmDegrade(spm);
+        break;
+    case SpmComplex64:
+        z_spmDegrade(spm);
+        break;
+    case SpmDouble:
+    default:
+        d_spmDegrade(spm);
+    }
+}
+
+/**
+ *******************************************************************************
+ *
  * @brief Scale a vector according to the spm type.
  *
  * x = alpha * x

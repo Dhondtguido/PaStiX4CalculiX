@@ -104,6 +104,8 @@ int    spmMatMat( spm_trans_t trans, spm_int_t n,
                                 const void *B, spm_int_t ldb,
                   double beta,        void *C, spm_int_t ldc );
 void   spmScalMatrix( double alpha, spmatrix_t *spm );
+void   spmDegradeMatrix(spmatrix_t* spm);
+
 void   spmScalVector( spm_coeftype_t flt, double alpha, spm_int_t n, void *x, spm_int_t incx );
 
 /**

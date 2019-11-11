@@ -85,6 +85,7 @@ void z_spmPrint( FILE *f, const spmatrix_t *spm );
 spmatrix_t *z_spmExpand(const spmatrix_t *spm);
 void        z_spmDofExtend(spmatrix_t *spm);
 void        z_spmScal( const double alpha, spmatrix_t *spm );
+void        z_spmDegrade( spmatrix_t *spm );
 
 
 #endif /* _z_spm_h_ */
