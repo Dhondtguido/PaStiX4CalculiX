@@ -18,6 +18,8 @@
 #ifndef _out_h_
 #define _out_h_
 
+#ifndef SCRIPT_OUT
+
 #define OUT_HEADER                                              \
     "+-------------------------------------------------+\n"     \
     "+     PaStiX : Parallel Sparse matriX package     +\n"     \
@@ -244,6 +246,233 @@
 #define OUT_TIME_REFINE       "    Time for refinement:                  %.4lf \n"
 #define OUT_END               " +--------------------------------------------------------------------+\n"
 
+#else
+
+#define OUT_HEADER \
+    "%d.%d.%d\n"   \
+    "%s\n"           \
+    "%s\n"           \
+    "%s\n"           \
+    "%s\n"           \
+    "%s\n"           \
+    "%d\n"           \
+    "%d\n"           \
+    "%d\n"           \
+    "%s\n"           \
+    "%s\n%ld\n"      \
+    "%ld\n%ld\n"    \
+    "\n"               \
+    "%s\n"           \
+    "%s\n"            \
+    "\n"                \
+    "%s\n"
+
+#define OUT_HEADER_LR \
+    "%e\n"         \
+    "%s\n"           \
+    "%ld\n"          \
+    "%ld\n"          \
+    "%f\n"           \
+    "%s\n"           \
+    "%s\n"           \
+    "%ld\n"          \
+    "%ld\n"          \
+    "%ld\n"          \
+    "%ld\n"          \
+    "%ld\n"
+
+#define OUT_STEP_ORDER                                          \
+    "\n"     \
+    "\n"
+#define OUT_SUBSTEP_GRAPH                       \
+    "\n"
+#define OUT_ORDER_SYMGRAPH                      \
+    "\n"
+#define OUT_ORDER_NODIAG                        \
+    "\n"
+#define OUT_ORDER_SORT                          \
+    "\n"
+#define OUT_ORDER_INIT                          \
+    "\n"
+#define OUT_ORDER_METHOD                        \
+    "%s\n"
+#define OUT_ORDER_TIME                                  \
+    "%lf \n"
+
+#define OUT_STEP_FAX                                            \
+    "\n"     \
+    "\n"
+#define OUT_FAX_METHOD                          \
+    "%s\n"
+#define OUT_FAX_SUMMARY                                                 \
+    "%ld\n"                  \
+    "%lf\n"                  \
+    "%lf \n"
+
+
+#define OUT_STEP_REORDER                                        \
+    "\n"     \
+    "\n"                                      \
+    "%ld\n"          \
+    "%ld\n"
+#define OUT_REORDERING_TIME                             \
+    "%lf\n"
+#define OUT_REORDERING_OPS                                              \
+    "%ld\n%lf%%\n"     \
+    "%ld\n"
+
+#define OUT_STEP_BLEND                                          \
+    "\n"     \
+    "\n"
+#define OUT_BLEND_CONF                                  \
+    "%ld\n"  \
+    "%ld\n"  \
+    "%ld\n"
+
+#define OUT_BLEND_CHKSMBMTX                     \
+    "\n"
+#define OUT_BLEND_CHKSOLVER                     \
+    "\n"
+#define OUT_BLEND_ELIMTREE                      \
+    "\n"
+#define OUT_BLEND_ELIMTREE_TIME                         \
+    "%lf\n"
+#define OUT_BLEND_COSTMATRIX                    \
+    "\n"
+#define OUT_BLEND_COSTMATRIX_TIME                       \
+    "%lf\n"
+#define OUT_BLEND_ELIMTREE_TOTAL_COST                   \
+    "%lf\n"
+#define OUT_BLEND_PROPMAP                       \
+    "\n"
+#define OUT_BLEND_PROPMAP_TIME                          \
+    "%lf \n"
+#define OUT_BLEND_SPLITSYMB                     \
+    "\n"
+#define OUT_BLEND_SPLITSYMB_TIME                        \
+    "%lf \n"
+#define OUT_BLEND_BUILDSIMU                     \
+    "\n"
+#define OUT_BLEND_BUILDSIMU_TIME                        \
+    "%lf \n"  \
+    "%ld\n"
+#define OUT_BLEND_SIMU                                  \
+    "\n"
+#define OUT_BLEND_SIMU_TIME                             \
+    "%lf \n"
+#define OUT_BLEND_ELIMGRAPH                     \
+    "\n"
+#define OUT_BLEND_ELIMGRAPH_TIME                        \
+    "%lf\n"
+#define OUT_BLEND_SOLVER                        \
+    "\n"
+#define OUT_BLEND_SOLVER_TIME                           \
+    "%lf\n"
+#define OUT_BLEND_TIME                                  \
+    "%lf\n"
+
+#define OUT_BLEND_SUMMARY                                               \
+    "%ld\n"                  \
+    "%lf\n"                  \
+    "%s\n%lf\n%cFlops\n"   \
+    "\n"                                                 \
+    "%s\n"                          \
+    "%lf\n"                  \
+    "%lf\n"
+
+#define OUT_STEP_SOPALIN                                          \
+    "\n"     \
+    "\n"                                   \
+    "%s\n"
+
+#define OUT_BCSC_TIME                                   \
+    "%lf\n"
+
+#define OUT_COEFTAB_TIME                                \
+    "%lf\n"
+
+#define OUT_SOPALIN_TIME                                                \
+    "%lf\n%lf\n%cFlop/s)\n" \
+    "%lf\n%cFlops\n"   \
+    "\n%ld\n"
+
+#define OUT_LOWRANK_SUMMARY                                     \
+    "\n"                                        \
+    "%ld\n%ld\n"          \
+    "%g\n%co\n%g\n%co\n"
+
+#define OUT_STARPU_TP         "%s\n"
+#define OUT_STARPU_STP        "%s\n"
+#define OUT_MATRIX_SIZE       "%ld\n%ld\n"
+#define OUT_NNZ               "%ld\n"
+
+#define OUT_GLOBAL_NNZL       "%ld\n"
+#define OUT_GLOBAL_FILLIN     "%lf\n"
+#define OUT_GLOBAL_THFLOPCNT  "%g\n%cflops\n"
+#define OUT_GLOBAL_RLFLOPCNT  "%g\n%cflops\n"
+
+#define TIME_TO_ANALYSE       "%g\n"
+#define NNZERO_WITH_FILLIN_TH "%ld\n"
+#define NNZERO_WITH_FILLIN    "%d\n%ld\n"
+#define SOLVMTX_WITHOUT_CO    "%d\n%g\n%s\n"
+#define OUT_FILLIN_TH         "%lg\n"
+#define NUMBER_OP_LU          "%g\n"
+#define NUMBER_OP_LLT         "%g\n"
+#define TIME_FACT_PRED        "%s\n%g\n"
+#define OUT_COEFSIZE          "%g\n%co\n"
+#define OUT_REDIS_CSC         "\n"
+#define OUT_REDIS_RHS         "\n"
+#define OUT_REDIS_SOL         "\n"
+#define OUT2_SOP_BINITG       "\n"
+#define OUT2_SOP_EINITG       "\n"
+#define OUT2_SOP_TABG         "\n"
+#define OUT2_SOP_BINITL       "\n"
+#define OUT2_SOP_NOTBIND      "\n"
+#define OUT2_SOP_BIND         "\n"
+#define OUT2_FUN_STATS        "%ld\n%ld\n%ld\n"
+#define OUT2_SOP_BSOP         "\n"
+#define OUT2_SOP_ESOP         "\n"
+#define OUT4_UPDO_TIME_INIT   "%d\n%d\n%lg\n"
+#define OUT4_UPDO_COMM_TIME   "%d\n%d\n%lg\n"
+#define OUT4_FACT_COMM_TIME   "%d\n%d\n%lg\n"
+#define OUT2_SOP_DOWN         "\n"
+#define OUT2_SOP_DIAG         "\n"
+#define OUT2_SOP_UP           "\n"
+#define GEN_RHS_1             "\n"
+#define GEN_RHS_I             "\n"
+#define GEN_SOL_0             "\n"
+#define OUT_ITERREFINE_GMRES    "\n"
+#define OUT_ITERREFINE_PIVOT    "\n"
+#define OUT_ITERREFINE_BICGSTAB "\n"
+#define OUT_ITERREFINE_GRAD     "\n"
+#define OUT_ITERREFINE_ITER     "%d\n"
+#define OUT_ITERREFINE_TTS      "%g\n"
+#define OUT_ITERREFINE_TTT      "%g\n"
+#define OUT_ITERREFINE_ERR      "%g\n"
+#define OUT_ITERREFINE_NORMA    "%g\n"
+#define OUT_ITERREFINE_NORMR    "%g\n"
+#define OUT_ITERREFINE_NORMB    "%g\n"
+#define OUT_ITERREFINE_BDIVR    "%g\n"
+#define OUT_REDISCSCDTIME     "%g\n"
+#define OUT_FILLCSCTIME       "%g\n"
+#define OUT_MAX_MEM_AF_SOP    "%g\n%s\n"
+#define OUT_MEM_USED_AF_SOP   "%g\n%s\n"
+#define MAX_MEM_AF_CL         "%g\n%s\n"
+#define MEM_USED_AF_CL        "%g\n%s\n"
+#define OUT_STATIC_PIVOTING   "%ld\n"
+#define OUT_ESP_NBTASKS       "%ld\n"
+#define OUT_TIME_FACT         "\n%g\n%g%s)\n"
+#define OUT_FLOPS_FACT        "%g\n%s\n"
+#define OUT_TIME_SOLV         "%lf\n"
+#define OUT_REFINE_ITER_NORM  "%ld\n%lf\n"
+#define OUT_PREC1             "%lf\n"
+#define OUT_PREC2             "%lf\n"
+#define OUT_TIME_REFINE       "%lf \n"
+#define OUT_END               "\n"
+
+
+#endif
+
 /*
  * Printing function to redirect to the correct file
  */
@@ -252,7 +481,6 @@ static inline void pastix_print( int mpirank, int thrdrank, const char *fmt, ...
 static inline void pastix_print_error  ( const char *fmt, ...) __attribute__((format(printf,1,2)));
 static inline void pastix_print_warning( const char *fmt, ...) __attribute__((format(printf,1,2)));
 #endif
-
 static inline void
 pastix_print( int mpirank, int thrdrank, const char *fmt, ...)
 {

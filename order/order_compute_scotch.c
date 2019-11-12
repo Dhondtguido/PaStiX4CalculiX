@@ -179,12 +179,16 @@ pastixOrderComputeScotch( pastix_data_t  *pastix_data,
     if (iparm[IPARM_ORDERING_DEFAULT] == 1) {
         if (iparm[IPARM_INCOMPLETE] == 0) {
             if (iparm[IPARM_VERBOSE] > PastixVerboseNo)
+#ifndef SCRIPT_OUT
                 pastix_print(procnum, 0, "      Scotch direct strategy\n");
+#endif
             sprintf(strat, SCOTCH_STRAT_DIRECT);
         }
         else {
             if (iparm[IPARM_VERBOSE] > PastixVerboseNo)
+#ifndef SCRIPT_OUT
                 pastix_print(procnum, 0, "      Scotch incomplete strategy\n");
+#endif
             sprintf(strat, SCOTCH_STRAT_INCOMP);
         }
     }

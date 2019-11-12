@@ -455,6 +455,7 @@ pastixSymbolPrintStats( const symbol_matrix_t *symbptr )
     mem += sizeof( symbol_blok_t )   * symbptr->bloknbr;
     mem += sizeof( pastix_int_t ) * bloknbr;
 
+#ifndef SCRIPT_OUT
     fprintf(stdout,
             "    Symbol Matrix statistics:\n"
             "      Number of cblk                    %10ld\n"
@@ -473,12 +474,41 @@ pastixSymbolPrintStats( const symbol_matrix_t *symbptr )
             (long)blokmin, (long)blokmax, blokavg1, blokavg2,
             pastix_print_value( mem ),
             pastix_print_unit( mem ) );
-
+            
     if ( cblksel > 0 ) {
         fprintf( stdout,
                  "      Number of selected cblk           %10ld\n",
                  (long)cblksel );
     }
+#else
+    fprintf(stdout,
+            "\n"
+            "%ld\n"
+            "%ld\n"
+            "%ld\n"
+            "%ld\n"
+            "%lf\n"
+            "%lf\n"
+            "%ld\n"
+            "%ld\n"
+            "%lf\n"
+            "%lf\n"
+            "%lf\n%co\n",
+            (long)cblknbr, (long)bloknbr,
+            (long)cblkmin, (long)cblkmax, cblkavg1, cblkavg2,
+            (long)blokmin, (long)blokmax, blokavg1, blokavg2,
+            pastix_print_value( mem ),
+            pastix_print_unit( mem ) );
+            
+    if ( cblksel > 0 ) {
+        fprintf( stdout,
+                 "%ld\n",
+                 (long)cblksel );
+    }
+#endif
+
+
+
 }
 
 /**

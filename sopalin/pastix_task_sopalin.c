@@ -106,9 +106,17 @@ pastix_subtask_spm2bcsc( pastix_data_t *pastix_data,
     {
         pastix_data->dparm[ DPARM_A_NORM ] = spmNorm( SpmFrobeniusNorm, spm );
         if (pastix_data->iparm[IPARM_VERBOSE] > PastixVerboseNo ) {
+			
+#ifndef SCRIPT_OUT
             pastix_print( 0, 0,
                           "    ||A||_2  =                            %e\n",
                           pastix_data->dparm[ DPARM_A_NORM ] );
+#else
+            pastix_print( 0, 0,
+                          "%e\n",
+                          pastix_data->dparm[ DPARM_A_NORM ] );
+#endif
+
         }
     }
 

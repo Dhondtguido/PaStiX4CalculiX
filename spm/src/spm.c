@@ -914,6 +914,7 @@ spmPrintInfo( const spmatrix_t* spm, FILE *stream )
     flttype = (flttype > 5 || flttype < 0) ? 6 : flttype;
     fmttype = (fmttype > 2 || fmttype < 0) ? 3 : fmttype;
 
+#ifndef SCRIPT_OUT
     fprintf(stream,
             "  Matrix type:  %s\n"
             "  Arithmetic:   %s\n"
@@ -924,6 +925,18 @@ spmPrintInfo( const spmatrix_t* spm, FILE *stream )
             flttypestr[flttype],
             fmttypestr[fmttype],
             (long)spm->gN, (long)spm->gnnz );
+#else
+    fprintf(stream,
+            "%s\n"
+            "%s\n"
+            "%s\n"
+            "%ld\n"
+            "%ld\n",
+            mtxtypestr[mtxtype],
+            flttypestr[flttype],
+            fmttypestr[fmttype],
+            (long)spm->gN, (long)spm->gnnz );
+#endif
 
     if ( spm->dof != 1 ) {
         if ( spm->dof > 1 ) {
