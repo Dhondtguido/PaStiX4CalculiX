@@ -45,6 +45,7 @@ include(CheckSystem)
 
 # Set the RPATH config
 # --------------------
+SET(CMAKE_EXE_LINKER_FLAGS "-lstdc++")
 
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)

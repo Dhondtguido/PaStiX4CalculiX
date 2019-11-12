@@ -76,7 +76,6 @@ core_zgetf2sp( pastix_int_t        m,
     Akk = A;
     for (k=0; k<minMN; k++) {
         Aik = Akk + 1;
-
         if ( cabs(*Akk) < criteria ) {
             if ( creal(*Akk) < 0. ) {
                 *Akk = (pastix_complex64_t)(-criteria);

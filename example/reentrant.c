@@ -63,7 +63,7 @@ static void *solve_smp(void *arg)
      * Read the sparse matrix with the driver
      */
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( param.driver, param.filename, spm );
+    spmReadDriver( param.driver, param.filename, spm, param.iparm );
 
     spmPrintInfo( spm, stdout );
 

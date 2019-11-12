@@ -48,11 +48,11 @@ int main (int argc, char **argv)
     int baseval;
     int rc = SPM_SUCCESS;
     int err = 0;
-
+int* iparm;
     spmGetOptions( argc, argv,
                    &driver, &filename );
 
-    rc = spmReadDriver( driver, filename, &spm );
+    rc = spmReadDriver( driver, filename, &spm, iparm );
     free(filename);
 
     if ( rc != SPM_SUCCESS ) {

@@ -136,7 +136,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
     if ( pastix_data->dparm[DPARM_EPSILON_REFINEMENT] < 0. ) {
         if ( (bcsc->flttype == PastixFloat) ||
              (bcsc->flttype == PastixComplex32) ) {
-            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-6;
+            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-10;
         }
         else {
             pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
@@ -241,7 +241,7 @@ pastix_task_refine( pastix_data_t *pastix_data,
     if ( pastix_data->dparm[DPARM_EPSILON_REFINEMENT] < 0. ) {
         if ( (bcsc->flttype == PastixFloat) ||
              (bcsc->flttype == PastixComplex32) ) {
-            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-6;
+            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-10;
         }
         else {
             pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;

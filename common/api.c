@@ -339,8 +339,8 @@ pastixInitParam( pastix_int_t *iparm,
     iparm[IPARM_SPLITTING_PROJECTIONS_WIDTH]    = 1;
 
     /* Analyze */
-    iparm[IPARM_MIN_BLOCKSIZE]         = 160;
-    iparm[IPARM_MAX_BLOCKSIZE]         = 320;
+    iparm[IPARM_MIN_BLOCKSIZE]         = 256;
+    iparm[IPARM_MAX_BLOCKSIZE]         = 2048;
     iparm[IPARM_TASKS2D_LEVEL]         = -1;
     iparm[IPARM_TASKS2D_WIDTH]         = iparm[IPARM_MIN_BLOCKSIZE];
     iparm[IPARM_ALLCAND]               = 0;
@@ -416,7 +416,7 @@ pastixInitParam( pastix_int_t *iparm,
     iparm[IPARM_MODIFY_PARAMETER] = 1;
     iparm[IPARM_START_TASK] = PastixTaskOrdering;
     iparm[IPARM_END_TASK]   = PastixTaskClean;
-    iparm[IPARM_FLOAT]      = -1;
+    iparm[IPARM_FLOAT]      = 3;
     iparm[IPARM_MTX_TYPE]   = -1;
     iparm[IPARM_DOF_NBR]    = 1;
 

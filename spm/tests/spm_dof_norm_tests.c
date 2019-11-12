@@ -51,14 +51,14 @@ int main (int argc, char **argv)
     int rc = SPM_SUCCESS;
     int err = 0;
     int i, dofmax = 4;
-
+int* iparm;
     /**
      * Get options from command line
      */
     spmGetOptions( argc, argv,
                    &driver, &filename );
 
-    rc = spmReadDriver( driver, filename, &original );
+    rc = spmReadDriver( driver, filename, &original, iparm );
     free(filename);
 
     if ( rc != SPM_SUCCESS ) {

@@ -389,7 +389,9 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
         else {
             threshold = pastix_data->dparm[ DPARM_EPSILON_MAGN_CTRL ] * pastix_data->dparm[DPARM_A_NORM];
         }
-
+        // deactivate static pivoting
+        threshold = 0;
+        
         sopalin_data.solvmtx->diagthreshold = threshold;
         sopalin_data.solvmtx->nbpivots      = 0;
 

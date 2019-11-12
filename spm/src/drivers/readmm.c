@@ -133,7 +133,6 @@ int
 s_readMM( FILE *file,
           spmatrix_t *spm )
 {
-printf("no i use this!\n");
     float       *valptr;
     spm_int_t *colptr;
     spm_int_t *rowptr;
@@ -240,7 +239,8 @@ p_readMM( FILE *file,
  *******************************************************************************/
 int
 readMM( const char   *filename,
-        spmatrix_t *spm )
+        spmatrix_t *spm,
+        spm_int_t *iparm )
 {
     MM_typecode matcode;
     FILE *file;
@@ -265,7 +265,14 @@ readMM( const char   *filename,
         spm->flttype = SpmComplex64;
     }
     else if (mm_is_real(matcode)) {
-        spm->flttype = SpmDouble;
+		if(iparm[66] == SpmDouble){
+			spm->flttype = SpmDouble;}
+		else if(iparm[66] == SpmFloat){
+			spm->flttype = SpmFloat;}
+		else{
+			fprintf(stderr,"readmm: Expected float or double.\n");
+			return SPM_ERR_IO;
+		}
     }
     else if (mm_is_pattern(matcode)) {
         spm->flttype = SpmPattern;

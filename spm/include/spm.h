@@ -166,7 +166,8 @@ int spmSave( const spmatrix_t *spm, FILE *outfile );
  */
 int spmReadDriver( spm_driver_t driver,
                    const char  *filename,
-                   spmatrix_t  *spm );
+                   spmatrix_t  *spm,
+                   spm_int_t *iparm);
 
 int spmParseLaplacianInfo( const char *    filename,
                            spm_coeftype_t *flttype,

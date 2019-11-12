@@ -44,6 +44,9 @@
 static inline pastix_iparm_t
 parse_iparm( const char *iparm )
 {
+	
+    if(0 == strcasecmp("float",           iparm)) { return IPARM_FLOAT; }
+	
     if(0 == strcasecmp("iparm_verbose",               iparm)) { return IPARM_VERBOSE; }
     if(0 == strcasecmp("iparm_io_strategy",           iparm)) { return IPARM_IO_STRATEGY; }
 
@@ -470,7 +473,13 @@ pastixGetOptions( int argc, char **argv,
         case '3':
             *driver = SpmDriverMM;
             *filename = strdup( optarg );
-            strncat(*filename, file, 6);
+size_t len1 = strlen(*filename), len2 = strlen(file);
+char *concat = (char*) malloc(len1 + len2 + 1);
+
+memcpy(concat, *filename, len1);
+memcpy(concat+len1, file, len2+1);
+            *filename = concat;
+            
             break;
 
         case '4':

@@ -56,8 +56,8 @@ int main (int argc, char **argv)
      */
     spmGetOptions( argc, argv,
                    &driver, &filename );
-
-    rc = spmReadDriver( driver, filename, &spm );
+int *iparm;
+    rc = spmReadDriver( driver, filename, &spm, iparm );
     free(filename);
 
     if ( rc != SPM_SUCCESS ) {

@@ -58,7 +58,7 @@ int main (int argc, char **argv)
      * Read Matrice
      */
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( driver, filename, spm );
+    spmReadDriver( driver, filename, spm, iparm );
     free( filename );
 
     spmPrintInfo( spm, stdout );

@@ -72,7 +72,7 @@ int main ( int argc, char **argv )
      * Read the sparse matrix with the driver
      */
     spm = malloc( sizeof( pastix_spm_t ) );
-    spmReadDriver( driver, filename, spm );
+    spmReadDriver( driver, filename, spm, iparm );
     free( filename );
     spmPrintInfo( spm, stdout );
 
