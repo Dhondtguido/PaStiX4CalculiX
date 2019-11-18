@@ -91,6 +91,7 @@ bcsc_init_coltab( const SolverMatrix  *solvmtx,
     if ( idxcol > 0 ) {
         MALLOC_INTERN( bcsc->rowtab,  idxcol, pastix_int_t);
         MALLOC_INTERN( bcsc->Lvalues, idxcol * pastix_size_of( bcsc->flttype ), char );
+        bcsc->numElements = idxcol;
     }
     else {
         bcsc->rowtab  = NULL;

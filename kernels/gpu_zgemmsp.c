@@ -160,6 +160,15 @@ gpucblk_zgemmsp(       pastix_coefside_t  sideA,
     double mzone = -1.0;
     double zone  =  1.0;
 #endif
+
+/*
+#if defined(PRECISION_s)
+    printf("Float gpu cblk sgemm\n");
+#else
+    printf("Double gpu cblk dgemm\n");
+#endif
+*/
+
     gemm_params_t params;
     const SolverBlok *iterblok;
     const SolverBlok *fblok;
@@ -352,6 +361,14 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
     double mzone = -1.0;
     double zone  =  1.0;
 #endif
+/*
+#if defined(PRECISION_s)
+    printf("Float gpu blk gemm\n");
+#else
+    printf("Double gpu blk gemm\n");
+#endif
+*/
+
     const SolverBlok *blokA, *blokB, *blokC;
     const SolverBlok *bA, *bB, *bC;
     const SolverBlok *fblokK, *lblokK;
@@ -504,6 +521,13 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
 #else
     double zone  =  1.0;
 #endif
+/*
+#if defined(PRECISION_s)
+    printf("Float gpu blk strsmsp\n");
+#else
+    printf("Double gpu blk gtrsmsp\n");
+#endif
+*/
     const SolverBlok *fblok, *lblok, *blok;
     pastix_int_t M, N, lda, ldc, offset, cblk_m, full_m;
     cuDoubleComplex *Cptr;

@@ -108,8 +108,8 @@ z_pivot_smp( pastix_data_t *pastix_data,
         }
 
         if ( (iter < itermax) &&
-             (berr > eps) &&
-             (berr <= (last_berr / 2.)) )
+             (berr > eps) /*&&
+             (berr <= (last_berr / 2.))*/ )
         {
             t3 = clockGet();
 

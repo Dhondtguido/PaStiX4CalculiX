@@ -999,9 +999,10 @@ void bcsc_zspsv( pastix_data_t      *pastix_data,
                  pastix_complex64_t *b )
 {
     pastix_int_t n = pastix_data->bcsc->gN;
-    pastix_data->iparm[IPARM_VERBOSE]--;
+    int temp = pastix_data->iparm[IPARM_VERBOSE];
+    pastix_data->iparm[IPARM_VERBOSE] = 0;
     pastix_subtask_solve( pastix_data, 1, b, n );
-    pastix_data->iparm[IPARM_VERBOSE]++;
+    pastix_data->iparm[IPARM_VERBOSE] = temp;
 }
 
 /**

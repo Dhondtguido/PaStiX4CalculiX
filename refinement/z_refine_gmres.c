@@ -133,6 +133,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
      */
     outflag = 1;
     iters = 0;
+    
     while (outflag)
     {
         /* Initialize v_{0} and w_{0} */
@@ -146,6 +147,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
 
         /* Compute resid = ||r0||_f */
         resid = solver.norm( pastix_data, n, gmVi );
+
         resid_b = resid / normb;
 
         /* If residual is small enough, exit */

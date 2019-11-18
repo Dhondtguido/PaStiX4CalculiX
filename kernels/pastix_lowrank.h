@@ -16,6 +16,8 @@
 #ifndef _pastix_lowrank_h_
 #define _pastix_lowrank_h_
 
+#include <common/integer.h>
+
 /**
  *
  * @addtogroup kernel_lr_null
