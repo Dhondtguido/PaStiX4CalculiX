@@ -158,6 +158,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			double *xptrD = (double*) malloc(sizeof(double) * n);
 			double *bptrD = (double*) malloc(sizeof(double) * n);
 			
+			#pragma omp parallel for
 			for(int i = 0; i < n; i++){
 				xptrD[i] = (double) (((float*) xptr)[i]);
 				bptrD[i] = (double) (((float*) bptr)[i]);
@@ -179,6 +180,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			double* L_new = (double*) malloc(sizeof(double) * numElements);
 			float* L_old = (float*) bcsc->Lvalues;			
 			bcsc->Lvalues = L_new;
+			
 			for(int i = 0; i < numElements; i++){
 				L_new[i] = (double) L_old[i];
 			}
@@ -189,6 +191,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			if(bcsc->Uvalues){
 				double* U_new = (double*) malloc(sizeof(double) * numElements);
 				bcsc->Uvalues = U_new;
+				
 				for(int i = 0; i < numElements; i++){
 					U_new[i] = (double) U_old[i];
 				}
@@ -197,28 +200,29 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			
 			SolverCblk* cblktab = pastix_data->solvmatr->cblktab;
 			int numCblks = pastix_data->solvmatr->cblknbr;
+			
 			for(int i = 0; i < numCblks; i++){
-				int cblksize = (cblktab->lcolnum - cblktab->fcolnum + 1) * cblktab->stride;
+				int cblksize = (cblktab[i].lcolnum - cblktab[i].fcolnum + 1) * cblktab[i].stride;
 
-				float* L_old = (float*) (cblktab->lcoeftab);
+				float* L_old = (float*) (cblktab[i].lcoeftab);
 				double* L_new = (double*) malloc(sizeof(double) * cblksize);
+
 				for( int j = 0; j < cblksize; j++){
 					L_new[j] = (double) L_old[j];
 				}
 				free(L_old);
-				cblktab->lcoeftab = L_new;
+				cblktab[i].lcoeftab = L_new;
 				
-				float* U_old = (float*) (cblktab->ucoeftab);
+				float* U_old = (float*) (cblktab[i].ucoeftab);
 				if(U_old){
 					double* U_new = (double*) malloc(sizeof(double) * cblksize);
+
 					for( int j = 0; j < cblksize; j++){
 						U_new[j] = (double) U_old[j];
 					}
 					free(U_old);
-					cblktab->ucoeftab = U_new;
+					cblktab[i].ucoeftab = U_new;
 				}
-				
-				cblktab++;
 			}
 		}
         size_t shiftx, shiftb;

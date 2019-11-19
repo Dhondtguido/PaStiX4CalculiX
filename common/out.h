@@ -38,10 +38,10 @@
     "  Distribution level:               %8s(%4ld)\n"           \
     "  Blocking size (min/max):             %4ld / %4ld\n"      \
     "  Computational models\n"                                  \
-    "    CPU: %41s\n"                                           \
-    "    GPU: %41s\n"                                           \
+    "    CPU: \n"                                           \
+    "    GPU: \n"                                           \
     "  Low rank parameters:\n"                                  \
-    "    Strategy:                      %16s\n"
+    "    Strategy:                      \n"
 
 #define OUT_HEADER_LR                                           \
     "    Tolerance:                            %8.0e\n"         \
@@ -262,10 +262,10 @@
     "%s\n%ld\n"      \
     "%ld\n%ld\n"    \
     "\n"               \
-    "%s\n"           \
-    "%s\n"            \
+    "\n"           \
+    "\n"            \
     "\n"                \
-    "%s\n"
+    "\n"
 
 #define OUT_HEADER_LR \
     "%e\n"         \

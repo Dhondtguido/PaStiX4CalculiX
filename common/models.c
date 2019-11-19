@@ -338,9 +338,8 @@ modelsRead( pastix_model_t *model,
  *
  *******************************************************************************/
 int
-modelsInitDefaultCPU( pastix_model_t *model )
+modelsInitDefaultCPU( pastix_model_t *model, int a)
 {
-    int a = 1; /* Real double */
     int ktype;
     double *coefs;
 
@@ -424,9 +423,8 @@ modelsInitDefaultCPU( pastix_model_t *model )
  *
  *******************************************************************************/
 int
-modelsInitDefaultGPU( pastix_model_t *model )
+modelsInitDefaultGPU( pastix_model_t *model, int a )
 {
-    int a = 1; /* Real double */
     int ktype;
     double *coefs;
 
@@ -562,7 +560,7 @@ pastixModelsLoad( pastix_data_t *pastix_data )
     filename = pastix_getenv( "PASTIX_MODELS_CPU" );
 
     if ( filename == NULL ) {
-        rc = modelsInitDefaultCPU( pastix_data->cpu_models );
+        rc = modelsInitDefaultCPU( pastix_data->cpu_models, (pastix_data->iparm)[66]-2 );
     }
     else {
         rc = modelsRead( pastix_data->cpu_models,
@@ -581,7 +579,7 @@ pastixModelsLoad( pastix_data_t *pastix_data )
     filename = pastix_getenv( "PASTIX_MODELS_GPU" );
 
     if ( filename == NULL ) {
-        rc = modelsInitDefaultGPU( pastix_data->gpu_models );
+        rc = modelsInitDefaultGPU( pastix_data->gpu_models, (pastix_data->iparm)[66]-2 );
     }
     else {
         rc = modelsRead( pastix_data->gpu_models,

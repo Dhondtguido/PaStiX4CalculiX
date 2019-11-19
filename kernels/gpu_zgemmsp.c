@@ -22,6 +22,7 @@
 #include "pastix_zcuda.h"
 #include "pastix_cuda.h"
 #include <cublas.h>
+#include <cublas_api.h>
 
 static char transstr[3] = { 'N', 'T', 'C' };
 static char sidestr[2] = { 'L', 'R' };
@@ -40,6 +41,7 @@ gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                          cuDoubleComplex *C,
                          cudaStream_t stream )
 {
+	
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex mzone = make_cuDoubleComplex(-1.0, 0.0);
     cuDoubleComplex zone  = make_cuDoubleComplex( 1.0, 0.0);
@@ -521,6 +523,7 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
 #else
     double zone  =  1.0;
 #endif
+
 /*
 #if defined(PRECISION_s)
     printf("Float gpu blk strsmsp\n");
