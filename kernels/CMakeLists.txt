@@ -88,6 +88,7 @@ precisions_rules_py(generated_sources
 set(kernels_sources
   ${generated_sources}
   lowrank.c
+  half_prec_utility.cu
   kernels_trace.c
   )
 
@@ -109,13 +110,14 @@ if(PASTIX_WITH_CUDA)
 
 endif(PASTIX_WITH_CUDA)
 
-add_library(pastix_kernels
+cuda_add_library(pastix_kernels
   ${kernels_sources}
   )
 
-add_dependencies(pastix_kernels
-  kernels_headers_tgt
-)
+set_source_files_properties(
+  ${kernels_sources}
+  PROPERTIES DEPENDS kernels_headers_tgt
+  )
 
 if(PASTIX_WITH_EZTRACE)
    target_link_libraries(pastix_kernels
@@ -142,11 +144,14 @@ if(PASTIX_WITH_CUDA)
       pastix_kernels_cuda )
 endif()
 
+                                 
+
 ### Install library
 install(TARGETS pastix_kernels
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib)
 
+cuda_build_clean_target()
 ### Add documented files to the global property
 add_documented_files(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

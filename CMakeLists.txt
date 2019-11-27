@@ -45,8 +45,10 @@ include(CheckSystem)
 
 # Set the RPATH config
 # --------------------
-SET(CMAKE_EXE_LINKER_FLAGS "-lstdc++")
+SET(CMAKE_EXE_LINKER_FLAGS "-lstdc++ -fopenmp ")
 SET(CMAKE_C_FLAGS $ENV{SCRIPT_OUT})
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -fopenmp ")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/targets/x86_64-linux/include ")
 
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -272,7 +274,7 @@ if( PASTIX_WITH_CUDA )
         set(CMAKE_REQUIRED_INCLUDES  "${saved_include}")
         set(CMAKE_REQUIRED_LIBRARIES "${saved_libs}")
 
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCUDA_SM_VERSION=20")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCUDA_SM_VERSION=70")
     else(CUDA_FOUND)
         message(FATAL_ERROR "CUDA is required but was not found. Please provide a CUDA library in your environment or configure with -DPASTIX_WITH_CUDA=OFF")
     endif (CUDA_FOUND)
@@ -941,6 +943,7 @@ add_documented_files(
   README.md
   docs/doxygen/chapters/eztrace.doxy
   kernels/pastix_lowrank.h
+  kernels/half_prec_utility.h
   #
   include/pastix.h
   include/pastix/api.h

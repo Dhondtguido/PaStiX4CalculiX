@@ -372,6 +372,19 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
         double threshold;
 
         sopalin_data.solvmtx = pastix_data->solvmatr;
+        sopalin_data.cublas_handle = pastix_data->cublas_handle;
+        sopalin_data.cublas_stat = pastix_data->cublas_stat;
+		cudaError_t cudaError;
+		printf("alloc cuda memory\n");
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneA), 2*4096*4096);
+		if(cudaError != cudaSuccess)
+			printf("CudaMalloc for SwapZoneA failed\n");
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneB), 2*4096*4096);
+		if(cudaError != cudaSuccess)
+			printf("CudaMalloc for SwapZoneB failed\n");
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneC), 2*4096*4096);
+		if(cudaError != cudaSuccess)
+			printf("CudaMalloc for SwapZoneC failed\n");
 
         /* TODO: might change the behavior: if the user wants a ratio of the norm, it could compute it himself */
         if ( pastix_data->dparm[ DPARM_EPSILON_MAGN_CTRL ] < 0. ) {

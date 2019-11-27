@@ -45,7 +45,7 @@
  *******************************************************************************/
 pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
 {
-    struct z_solver     solver;
+    struct z_solver     solver; 
     Clock               refine_clk;
     pastix_complex64_t *gmHi, *gmH;
     pastix_complex64_t *gmVi, *gmV;

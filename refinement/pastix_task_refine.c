@@ -145,13 +145,13 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
             pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
         }
     }
-
+    
+    
+    void *xptr = (char *)(*x);
+	void *bptr = (char *)(*b);
+		
     clockStart(timer);
     {
-        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
-        
-		void *xptr = (char *)(*x);
-		void *bptr = (char *)(*b);
 		
         if(iparm[66] == 2){
 			
@@ -173,14 +173,12 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			xptr = (char*) xptrD;
 			bptr = (char*) bptrD;
 			
-			pastix_data->bcsc->flttype = PastixDouble;
-			
 			int numElements = bcsc->numElements;
 			
 			double* L_new = (double*) malloc(sizeof(double) * numElements);
 			float* L_old = (float*) bcsc->Lvalues;			
 			bcsc->Lvalues = L_new;
-			
+			#pragma omp simd
 			for(int i = 0; i < numElements; i++){
 				L_new[i] = (double) L_old[i];
 			}
@@ -188,16 +186,19 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			
 			float* U_old = (float*) bcsc->Uvalues;
 			
-			if(bcsc->Uvalues){
+			if(bcsc->mtxtype != SpmGeneral){
+				bcsc->Uvalues = bcsc->Lvalues;
+			}
+			else if(bcsc->Uvalues){
 				double* U_new = (double*) malloc(sizeof(double) * numElements);
 				bcsc->Uvalues = U_new;
-				
+				#pragma omp simd
 				for(int i = 0; i < numElements; i++){
 					U_new[i] = (double) U_old[i];
 				}
 				free(U_old);
 			}
-			
+			/*
 			SolverCblk* cblktab = pastix_data->solvmatr->cblktab;
 			int numCblks = pastix_data->solvmatr->cblknbr;
 			
@@ -206,7 +207,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 
 				float* L_old = (float*) (cblktab[i].lcoeftab);
 				double* L_new = (double*) malloc(sizeof(double) * cblksize);
-
+				#pragma omp simd
 				for( int j = 0; j < cblksize; j++){
 					L_new[j] = (double) L_old[j];
 				}
@@ -216,15 +217,27 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 				float* U_old = (float*) (cblktab[i].ucoeftab);
 				if(U_old){
 					double* U_new = (double*) malloc(sizeof(double) * cblksize);
-
+					#pragma omp simd
 					for( int j = 0; j < cblksize; j++){
 						U_new[j] = (double) U_old[j];
 					}
 					free(U_old);
 					cblktab[i].ucoeftab = U_new;
 				}
-			}
+			}*/
 		}
+	}
+    clockStop(timer);
+    
+    if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
+        pastix_print( 0, 0, OUT_TIME_CAST,
+                      clockVal(timer) );
+    }
+
+    clockStart(timer);
+    {
+        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
+        
         size_t shiftx, shiftb;
         int i;
 
@@ -244,6 +257,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
         pastix_print( 0, 0, OUT_TIME_REFINE,
                       pastix_data->dparm[DPARM_REFINE_TIME] );
     }
+    
+    bcsc->flttype = PastixDouble;
 
     (void)n;
     return PASTIX_SUCCESS;

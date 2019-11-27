@@ -364,7 +364,7 @@ pastix_usage(void)
 /**
  * @brief Define the long options when getopt_long is available
  */
-static struct option long_options[] =
+static const struct option long_options[] =
 {
     {"rsa",         required_argument,  0, '0'},
     {"hb",          required_argument,  0, '1'},

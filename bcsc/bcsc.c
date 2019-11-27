@@ -427,3 +427,58 @@ bcscExit( pastix_bcsc_t *bcsc )
 
     memFree_null( bcsc->Lvalues );
 }
+
+/*
+void
+bcsc_DSspmv( const pastix_data_t      *pastix_data,
+            pastix_trans_t            trans,
+            double        alpha,
+            const double *x,
+            double        beta,
+            double       *y )
+{
+    pastix_int_t *iparm = pastix_data->iparm;
+    pastix_int_t n = pastix_data->bcsc->gN;
+
+	float* xFloat = (float*) malloc(sizeof(float) * n);
+	float* yFloat = (float*) malloc(sizeof(float) * n);
+    for(int i = 0; i < n; i++){
+		xFloat[i] = (float) x[i];
+		yFloat[i] = (float) y[i];
+	}
+
+    if ( iparm[IPARM_SCHEDULER] == PastixSchedStatic ) {
+        bcsc_sspmv_smp( pastix_data, trans, alpha, xFloat, beta, yFloat );
+    }
+    else {
+        bcsc_sspmv_seq( pastix_data, trans, alpha, xFloat, beta, yFloat );
+    }
+    
+    for(int i = 0; i < n; i++){
+		y[i] = (double) yFloat[i];
+	}
+	free(xFloat);
+	free(yFloat);
+}
+*/
+
+void bcsc_DSspsv( pastix_data_t      *pastix_data,
+                 double *b )
+{
+    pastix_int_t n = pastix_data->bcsc->gN;
+    
+    float* bFloat = (float*) malloc(sizeof(float) * n);
+    for(int i = 0; i < n; i++)
+		bFloat[i] = (float) b[i];
+		
+    int temp = pastix_data->iparm[IPARM_VERBOSE];
+    pastix_data->iparm[IPARM_VERBOSE] = 0;
+    pastix_subtask_solve( pastix_data, 1, bFloat, n );
+    
+    for(int i = 0; i < n; i++)
+		b[i] = (double) bFloat[i];
+		
+	free(bFloat);
+	
+    pastix_data->iparm[IPARM_VERBOSE] = temp;
+}

@@ -125,9 +125,16 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
     solver->output_final   = &z_refine_output_final;
 
     /* Basic operations */
-    solver->spsv = &bcsc_zspsv;
+#if defined(PRECISION_d)
+    if(pastix_data->iparm[66] == 2)
+		solver->spsv = &bcsc_DSspsv;
+	else
+		solver->spsv = &bcsc_zspsv;
+#else
+	solver->spsv = &bcsc_zspsv;
+#endif
     if ( sched == PastixSchedSequential ) {
-        solver->spmv = &bcsc_zspmv_seq;
+        solver->spmv = &bcsc_zspmv;
         solver->copy = &bvec_zcopy_seq;
         solver->dot  = &bvec_zdotc_seq;
         solver->axpy = &bvec_zaxpy_seq;
@@ -135,7 +142,7 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
         solver->norm = &bvec_znrm2_seq;
         solver->gemv = &bvec_zgemv_seq;
     } else {
-        solver->spmv = &bcsc_zspmv_smp;
+        solver->spmv = &bcsc_zspmv;
         solver->copy = &bvec_zcopy_smp;
         solver->dot  = &bvec_zdotc_smp;
         solver->axpy = &bvec_zaxpy_smp;

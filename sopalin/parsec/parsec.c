@@ -28,7 +28,7 @@
 #include <parsec.h>
 #include "parsec/utils/mca_param.h"
 #if defined(PASTIX_WITH_CUDA)
-#include <cublas.h>
+#include <cublas_v2.h>
 #endif
 
 /**

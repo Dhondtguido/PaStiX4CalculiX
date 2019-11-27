@@ -47,6 +47,11 @@ cpu1d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_dat
 gpu1d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->gpu_coefs))[PastixKernelGEMMCblk2d2d][0])" ]
 cpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->cpu_coefs))[PastixKernelGEMMBlok2d2d][0])" ]
 gpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->gpu_coefs))[PastixKernelGEMMBlok2d2d][0])" ]
+cublas_handle [ type = "cublasHandle_t *" hidden = on default = "(sopalin_data->cublas_handle)" ]
+cublas_stat [ type = "cublasStatus_t *" hidden = on default = "(sopalin_data->cublas_stat)" ]
+swapZoneA [ type = "void *" hidden = on default = "(sopalin_data->swapZoneA)" ]
+swapZoneB [ type = "void *" hidden = on default = "(sopalin_data->swapZoneB)" ]
+swapZoneC [ type = "void *" hidden = on default = "(sopalin_data->swapZoneC)" ]
 
 /**************************************************
  *                   SYTRF                        *
@@ -224,12 +229,12 @@ BODY [ type=CUDA
                                descA->d_blocktab[parsec_body.index],
                                lcblk, blok, fcblk,
                                A, B, C,
-                               parsec_body.stream );
+                               parsec_body.stream, cublas_handle, cublas_stat );
 #else
             gpucblk_zgemmsp( PastixLCoef, PastixUCoef, PastixTrans,
                              lcblk, blok, fcblk,
                              A, B, C,
-                             &lowrank, parsec_body.stream );
+                             &lowrank, parsec_body.stream, cublas_handle, cublas_stat );
 #endif /* defined(PASTIX_CUDA_FERMI) */
         }
     }
@@ -406,7 +411,7 @@ RW    C   <-  isTwoD & noskip & (first == last) ? A OneToTwoD( k, m )
 /*             gpublok_ztrsmsp( PastixLCoef, PastixRight, PastixUpper, */
 /*                              PastixNoTrans, PastixNonUnit, */
 /*                              cblk, m, A, C, &lowrank, */
-/*                              parsec_body.stream ); */
+/*                              parsec_body.stream, cublas_handle, cublas_stat ); */
 
 /*             /\* TODO: implements gpublok_zscalo *\/ */
 /*             assert(0); */
@@ -622,7 +627,7 @@ BODY [ type=CUDA
             gpublok_zgemmsp( PastixLCoef, PastixUCoef, PastixTrans,
                              cblk, fcblk, blok_mk, nk, blok_mn,
                              A, B, C, &lowrank,
-                             parsec_body.stream );
+                             parsec_body.stream, cublas_handle, cublas_stat, swapZoneA, swapZoneB, swapZoneC );
         }
     }
 }

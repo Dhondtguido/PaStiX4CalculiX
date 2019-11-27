@@ -14,6 +14,8 @@
 #ifndef _pastix_cuda_h_
 #define _pastix_cuda_h_
 
+#include <cublas_v2.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

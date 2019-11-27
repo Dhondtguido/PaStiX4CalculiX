@@ -54,7 +54,7 @@ set_source_files_properties(
 # # For Maxwell
 # set(CUDA_NVCC_FLAGS_50 -arch sm_50 -DCUDA_SM_VERSION=50)
 # set(CUDA_NVCC_FLAGS_52 -arch sm_52 -DCUDA_SM_VERSION=52)
-# set(CUDA_NVCC_FLAGS_53 -arch sm_53 -DCUDA_SM_VERSION=53)
+ set(CUDA_NVCC_FLAGS_70 -arch sm_70 -DCUDA_SM_VERSION=70)
 #
 # set(CUDA_SM_TARGETS 20 30 32 35 CACHE STRING "Specify GPU architectures to build binaries for, BIN(PTX) format is supported")
 #
@@ -82,4 +82,4 @@ install(TARGETS pastix_kernels_cuda
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib )
 
-cuda_build_clean_target()
+#cuda_build_clean_target()
