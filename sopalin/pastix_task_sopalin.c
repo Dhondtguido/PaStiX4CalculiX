@@ -371,18 +371,20 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
     {
         double threshold;
 
-        sopalin_data.solvmtx = pastix_data->solvmatr;
+        sopalin_data.solvmtx = pastix_data->solvmatr;/*
+        sopalin_data.gpu_block_dgemm = 0;
+        sopalin_data.cpu_block_dgemm = 0;*/
         sopalin_data.cublas_handle = pastix_data->cublas_handle;
         sopalin_data.cublas_stat = pastix_data->cublas_stat;
+        //cublasSetMathMode(*(pastix_data->cublas_handle), CUBLAS_TENSOR_OP_MATH);
 		cudaError_t cudaError;
-		printf("alloc cuda memory\n");
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneA), 2*4096*4096);
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneA), 2*8192*8192);
 		if(cudaError != cudaSuccess)
 			printf("CudaMalloc for SwapZoneA failed\n");
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneB), 2*4096*4096);
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneB), 2*8192*8192);
 		if(cudaError != cudaSuccess)
 			printf("CudaMalloc for SwapZoneB failed\n");
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneC), 2*4096*4096);
+		cudaError = cudaMalloc(&(sopalin_data.swapZoneC), 2*8192*8192);
 		if(cudaError != cudaSuccess)
 			printf("CudaMalloc for SwapZoneC failed\n");
 

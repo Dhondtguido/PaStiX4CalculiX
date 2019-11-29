@@ -593,17 +593,13 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
         pastixInitParam( iparm, dparm );
     }
     
-    printf("malloc cublas\n");
     pastix->cublas_handle = (cublasHandle_t*) malloc(sizeof(cublasHandle_t));
     pastix->cublas_stat = (cublasStatus_t*) malloc(sizeof(cublasStatus_t));
-    printf("init cublas\n");
 	*(pastix->cublas_stat) = cublasCreate(pastix->cublas_handle);
 	if (*(pastix->cublas_stat) != CUBLAS_STATUS_SUCCESS) {
         printf ("CUBLAS initialization failed\n");
     }
    // *(pastix->cublas_stat) = cublasSetMathMode(*(pastix->cublas_handle), CUBLAS_TENSOR_OP_MATH);
-
-    printf("done\n");
 
     pastix->iparm = iparm;
     pastix->dparm = dparm;

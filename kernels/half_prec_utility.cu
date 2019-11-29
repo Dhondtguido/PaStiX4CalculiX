@@ -28,17 +28,17 @@ void upcast_block_kernel(__half* src_block, int width, int height, int ld, float
 
 
 __host__
-void downcast_block(const void* src_block, int width, int height, int ld, void* dest_block){
+void downcast_block(const void* src_block, int width, int height, int ld, void* dest_block, cudaStream_t* stream){
     __half* hp_block = (__half*) dest_block;    
 	const float* sp_block = (float*) src_block;
-    downcast_block_kernel<<<(width*height+511)/512,512>>>(sp_block, width, height, ld, hp_block);
+    downcast_block_kernel<<<(width*height+511)/512,512,0,*stream>>>(sp_block, width, height, ld, hp_block);
 }
 
 __host__
-void upcast_block(void* src_block, int width, int height, int ld, void* dest_block){
+void upcast_block(void* src_block, int width, int height, int ld, void* dest_block, cudaStream_t* stream){
     __half* hp_block = (__half*) src_block;    
 	float* sp_block = (float*) dest_block;
-    upcast_block_kernel<<<(width*height+511)/512,512>>>(hp_block, width, height, ld, sp_block);
+    upcast_block_kernel<<<(width*height+511)/512,512,0,*stream>>>(hp_block, width, height, ld, sp_block);
 }
 
 __host__
@@ -50,3 +50,42 @@ void wrapHgemm (cublasHandle_t* handle, cublasOperation_t transa, cublasOperatio
 
     cublasHgemm(*handle, transa, transb, m, n, k, &hpmzone, (__half*)A, lda, (__half*)B, ldb, &hpzone, (__half*)C, ldc);
 }
+
+/*
+__global__
+void downcast_block_kernel(const float* src_block, int width, int height, int ld, half* dest_block){
+	int i = 8 * blockIdx.x * blockDim.x + threadIdx.x;
+	int row = i % height;
+	int col = i / height;
+	#pragma unroll
+	for(int j = 0; j < 8 && i + j < width * height; j++){
+        dest_block[row + col * ld + j] = __float2half(src_block[row + col * ld + j]);
+	}
+}
+
+__global__
+void upcast_block_kernel(__half* src_block, int width, int height, int ld, float* dest_block){
+	int i = 8 * blockIdx.x * blockDim.x + threadIdx.x;
+	int row = i % height;
+	int col = i / height;
+	#pragma unroll
+	for(int j = 0; j < 8 && i < width * height; j++){
+        dest_block[row + col * ld + j] = __half2float(src_block[row + col * ld + j]);
+	}
+}
+
+
+__host__
+void downcast_block(const void* src_block, int width, int height, int ld, void* dest_block, cudaStream_t* stream){
+    __half* hp_block = (__half*) dest_block;    
+	const float* sp_block = (float*) src_block;
+    downcast_block_kernel<<<(width*height+4095)/4096,512,0,*stream>>>(sp_block, width, height, ld, hp_block);
+}
+
+__host__
+void upcast_block(void* src_block, int width, int height, int ld, void* dest_block, cudaStream_t* stream){
+    __half* hp_block = (__half*) src_block;    
+	float* sp_block = (float*) dest_block;
+    upcast_block_kernel<<<(width*height+4095)/4096,512,0,*stream>>>(hp_block, width, height, ld, sp_block);
+}
+*/

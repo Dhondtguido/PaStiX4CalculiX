@@ -24,6 +24,7 @@
 #include "half_prec_utility.h"
 #include <unistd.h>
 #include "math.h"
+#include <time.h>
 
 static char transstr[3] = { CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C };
 static char sidestr[2] = { CUBLAS_SIDE_LEFT, CUBLAS_SIDE_RIGHT };
@@ -433,14 +434,18 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
     full_m = 0;
     cublasSetStream( *cublas_handle, stream );
     bC = blokC;
-    
+   // int ay = 0;
+    for(int i = 0; i < 1; i++){
     for (bA = blokA; (bA < lblokK) && (bA->fcblknm == cblk_m); bA++) {
         M = blok_rownbr(bA);
         Aptr = A + bA->coefind - offsetA;
         lda = M;
 
 #if defined(PRECISION_s)
-       // downcast_block(Aptr, K, M, lda, swapZoneA);
+		//M = lda = M + (8 - (M % 8));
+		//cudaStreamSynchronize( stream );
+		//printf("stream: %d\n", stream);
+		downcast_block(Aptr, K, M, lda, swapZoneA, &stream);
 #endif
 
         full_m += M;
@@ -461,11 +466,18 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             	
 
     //        *f = 1000;
+            float* f = (float*) malloc(sizeof(float));
 #if defined(PRECISION_s)
-/*            float* f = (float*) malloc(sizeof(float));
+
+		//N = ldb = N + (8 - (N % 8));
+		//K = K + (8 - (K % 8));
+		//ldc = ldc + (8 - (ldc % 8));
+/*
             printf("M = %ld\n", M);
             printf("N = %ld\n", N);
             printf("K = %ld\n", K);
+            printf("lda = %ld\n", lda);
+            printf("ldb = %ld\n", ldb);
             printf("ldc = %ld\n", ldc);
             printf("transpose = %d\n", transstr[trans - PastixNoTrans]);
            
@@ -526,14 +538,14 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
             printf("CptrReal[20] = %.30f\n", *f);
              
-        downcast_block(Aptr, K, M, lda, swapZoneA);
-        upcast_block(swapZoneA, K, M, lda, Aptr);
+        downcast_block(Aptr, K, M, lda, swapZoneA, &stream);
+        upcast_block(swapZoneA, K, M, lda, Aptr, &stream);
         
-		downcast_block(Bptr, K, N, ldb, swapZoneB); 
-		upcast_block(swapZoneB, K, N, ldb, Bptr);
+		downcast_block(Bptr, K, N, ldb, swapZoneB, &stream); 
+		upcast_block(swapZoneB, K, N, ldb, Bptr, &stream);
             
-		downcast_block(CptrReal, N, M, ldc, swapZoneC);
-		upcast_block(swapZoneC, N, M, ldc, CptrReal);
+		downcast_block(CptrReal, N, M, ldc, swapZoneC, &stream);
+		upcast_block(swapZoneC, N, M, ldc, CptrReal, &stream);
              cudaDeviceSynchronize();
             
             cudaMemcpy(f, &(Aptr[0]), sizeof(float), cudaMemcpyDeviceToHost);
@@ -591,31 +603,40 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             cudaMemcpy(f, &(CptrReal[19]), sizeof(float), cudaMemcpyDeviceToHost);
             printf("CptrReal[19] = %.30f\n", *f);
             cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[20] = %.30f\n", *f);
-            exit(0);
-            */
+            printf("CptrReal[20] = %.30f\n", *f);*/
+            
 		
 		/*wrapHgemm( cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
                          M, N, K, swapZoneA, lda,
                                 swapZoneB, ldb, swapZoneC, ldc );*/
-                          
+                        
 		/*cublasGemmEx( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
                          M, N, K,
                          &mzone, Aptr, CUDA_R_32F, lda,
                                 Bptr, CUDA_R_32F, ldb,
                           &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT );*/
-
-
-		//downcast_block(Bptr, K, N, ldb, swapZoneB); 
-		//downcast_block(CptrReal, N, M, ldc, swapZoneC);
-		/*cublasGemmEx( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
+		downcast_block(Bptr, K, N, ldb, swapZoneB, &stream); 
+		//printf("stream: %d\n", stream);
+		//if(K % 8 == 0 && lda % 8 == 0 && ldb % 8 == 0 && ldc % 8 == 0 && N % 4 == 0)
+		//	printf("Tensor!\n");
+		//ay++;
+		//cudaDeviceSynchronize();
+		cublasGemmEx( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
                          M, N, K,
                          &mzone, swapZoneA, CUDA_R_16F, lda,
                                 swapZoneB, CUDA_R_16F, ldb,
-                          &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT );
-             */
+                          &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP );
+		//cudaDeviceSynchronize();
+                          
+                       //                             &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP );
              
              
+            /*cublasZgemm( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
+                         M, N, K,
+                         &mzone, Aptr, lda,
+                                Bptr, ldb,
+                          &zone, CptrReal, ldc );*/
+//printf("\n"); 
 		//upcast_block(swapZoneC, N, M, ldc, CptrReal);
 		
 #else
@@ -651,12 +672,15 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             cudaMemcpy(f, &(CptrReal[19]), sizeof(float), cudaMemcpyDeviceToHost);
             printf("CptrReal[19] = %.30f\n", *f);
             cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[20] = %.30f\n", *f);*/
+            printf("CptrReal[20] = %.30f\n", *f);
+            sleep(1);*/
         }
  
 
     }
-    
+}
+    //if(ay > 10)
+	//	printf("%d\n", ay);
 #if defined(PASTIX_GENERATE_MODEL)
     cudaStreamSynchronize( stream );
 #endif
