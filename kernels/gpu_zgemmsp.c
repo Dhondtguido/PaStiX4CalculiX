@@ -21,15 +21,13 @@
 #include "kernels_trace.h"
 #include "pastix_zcuda.h"
 #include "pastix_cuda.h"
-#include "half_prec_utility.h"
-#include <unistd.h>
-#include "math.h"
-#include <time.h>
+#include <cublas.h>
+#include <cublas_api.h>
 
-static char transstr[3] = { CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C };
-static char sidestr[2] = { CUBLAS_SIDE_LEFT, CUBLAS_SIDE_RIGHT };
-static char uplostr[3] = { CUBLAS_FILL_MODE_UPPER, CUBLAS_FILL_MODE_LOWER, 'A' };
-static char diagstr[2] = { CUBLAS_DIAG_NON_UNIT, CUBLAS_DIAG_UNIT };
+static char transstr[3] = { 'N', 'T', 'C' };
+static char sidestr[2] = { 'L', 'R' };
+static char uplostr[3] = { 'U', 'L', 'A' };
+static char diagstr[2] = { 'N', 'U' };
 
 void
 gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
@@ -41,9 +39,7 @@ gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                    const cuDoubleComplex *A,
                    const cuDoubleComplex *B,
                          cuDoubleComplex *C,
-                         cudaStream_t stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat )
+                         cudaStream_t stream )
 {
 	
 #if defined(PRECISION_z) || defined(PRECISION_c)
@@ -74,7 +70,7 @@ gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
 
     C = C + ldc * ( blok->frownum - fcblk->fcolnum );
 
-    pastix_fermi_zgemmsp( CUBLAS_OP_N, transstr[trans - PastixNoTrans], M, N, K,
+    pastix_fermi_zgemmsp( 'N', transstr[trans - PastixNoTrans], M, N, K,
                           mzone, A + blok[s].coefind, lda,
                                  B + blok[0].coefind, ldb,
                           zone,  C, ldc,
@@ -157,9 +153,7 @@ gpucblk_zgemmsp(       pastix_coefside_t  sideA,
                  const cuDoubleComplex   *B,
                        cuDoubleComplex   *C,
                  const pastix_lr_t       *lowrank,
-                       cudaStream_t       stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat )
+                       cudaStream_t       stream )
 {
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex mzone = make_cuDoubleComplex(-1.0, 0.0);
@@ -360,25 +354,14 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
                  const cuDoubleComplex   *B,
                        cuDoubleComplex   *C,
                  const pastix_lr_t       *lowrank,
-                       cudaStream_t       stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat,
-					   void * swapZoneA,
-					   void * swapZoneB,
-					   void * swapZoneC
-                        )
+                       cudaStream_t       stream )
 {
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex mzone = make_cuDoubleComplex(-1.0, 0.0);
     cuDoubleComplex zone  = make_cuDoubleComplex( 1.0, 0.0);
 #else
-#if defined(PRECISION_s)
-    float mzone = -1.0;
-    float zone  =  1.0;
-#else
     double mzone = -1.0;
     double zone  =  1.0;
-#endif
 #endif
 /*
 #if defined(PRECISION_s)
@@ -432,24 +415,16 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
 
     K = cblk_colnbr( cblk );
     full_m = 0;
-    cublasSetStream( *cublas_handle, stream );
+
+    cublasSetKernelStream( stream );
     bC = blokC;
-   // int ay = 0;
-    for(int i = 0; i < 1; i++){
     for (bA = blokA; (bA < lblokK) && (bA->fcblknm == cblk_m); bA++) {
         M = blok_rownbr(bA);
         Aptr = A + bA->coefind - offsetA;
         lda = M;
-
-#if defined(PRECISION_s)
-		//M = lda = M + (8 - (M % 8));
-		//cudaStreamSynchronize( stream );
-		//printf("stream: %d\n", stream);
-		downcast_block(Aptr, K, M, lda, swapZoneA, &stream);
-#endif
-
         full_m += M;
 
+        /* Find facing C blok */
         while (!is_block_inside_fblock( bA, bC )) {
             bC++;
             assert( bC < lblokN );
@@ -462,225 +437,18 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             N = blok_rownbr( bB );
             Bptr = B + bB->coefind - offsetB;
             ldb = N;
-			float* CptrReal = Cptr + (bA->frownum - bC->frownum) + (bB->frownum - fcblk->fcolnum) * ldc;
-            	
 
-    //        *f = 1000;
-            float* f = (float*) malloc(sizeof(float));
-#if defined(PRECISION_s)
+            cublasZgemm( 'N', transstr[trans - PastixNoTrans],
+                         M, N, K,
+                         mzone, Aptr, lda,
+                                Bptr, ldb,
+                          zone, Cptr + (bA->frownum - bC->frownum)
+                                     + (bB->frownum - fcblk->fcolnum) * ldc, ldc );
 
-		//N = ldb = N + (8 - (N % 8));
-		//K = K + (8 - (K % 8));
-		//ldc = ldc + (8 - (ldc % 8));
-/*
-            printf("M = %ld\n", M);
-            printf("N = %ld\n", N);
-            printf("K = %ld\n", K);
-            printf("lda = %ld\n", lda);
-            printf("ldb = %ld\n", ldb);
-            printf("ldc = %ld\n", ldc);
-            printf("transpose = %d\n", transstr[trans - PastixNoTrans]);
-           
-            cudaMemcpy(f, &(Aptr[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[3]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[3] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[4]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[4] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[5]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[5] = %.30f\n", *f);
-            
-            
-            cudaMemcpy(f, &(Bptr[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[3]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[3] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[4]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[4] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[5]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[5] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[6]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[6] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[7]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[7] = %.30f\n", *f);
-            
-  
-            cudaMemcpy(f, &(CptrReal[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[6]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[6] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[7]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[7] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[8]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[8] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[12]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[12] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[13]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[13] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[14]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[14] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[18]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[18] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[19]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[19] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[20] = %.30f\n", *f);
-             
-        downcast_block(Aptr, K, M, lda, swapZoneA, &stream);
-        upcast_block(swapZoneA, K, M, lda, Aptr, &stream);
-        
-		downcast_block(Bptr, K, N, ldb, swapZoneB, &stream); 
-		upcast_block(swapZoneB, K, N, ldb, Bptr, &stream);
-            
-		downcast_block(CptrReal, N, M, ldc, swapZoneC, &stream);
-		upcast_block(swapZoneC, N, M, ldc, CptrReal, &stream);
-             cudaDeviceSynchronize();
-            
-            cudaMemcpy(f, &(Aptr[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[3]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[3] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[4]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[4] = %.30f\n", *f);
-            cudaMemcpy(f, &(Aptr[5]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Aptr[5] = %.30f\n", *f);
-            
-            
-            cudaMemcpy(f, &(Bptr[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[3]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[3] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[4]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[4] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[5]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[5] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[6]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[6] = %.30f\n", *f);
-            cudaMemcpy(f, &(Bptr[7]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("Bptr[7] = %.30f\n", *f);
-            
-  
-            cudaMemcpy(f, &(CptrReal[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[6]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[6] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[7]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[7] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[8]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[8] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[12]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[12] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[13]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[13] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[14]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[14] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[18]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[18] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[19]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[19] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[20] = %.30f\n", *f);*/
-            
-		
-		/*wrapHgemm( cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
-                         M, N, K, swapZoneA, lda,
-                                swapZoneB, ldb, swapZoneC, ldc );*/
-                        
-		/*cublasGemmEx( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
-                         M, N, K,
-                         &mzone, Aptr, CUDA_R_32F, lda,
-                                Bptr, CUDA_R_32F, ldb,
-                          &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT );*/
-		downcast_block(Bptr, K, N, ldb, swapZoneB, &stream); 
-		//printf("stream: %d\n", stream);
-		//if(K % 8 == 0 && lda % 8 == 0 && ldb % 8 == 0 && ldc % 8 == 0 && N % 4 == 0)
-		//	printf("Tensor!\n");
-		//ay++;
-		//cudaDeviceSynchronize();
-		cublasGemmEx( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
-                         M, N, K,
-                         &mzone, swapZoneA, CUDA_R_16F, lda,
-                                swapZoneB, CUDA_R_16F, ldb,
-                          &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP );
-		//cudaDeviceSynchronize();
-                          
-                       //                             &zone, CptrReal, CUDA_R_32F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP );
-             
-             
-            /*cublasZgemm( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
-                         M, N, K,
-                         &mzone, Aptr, lda,
-                                Bptr, ldb,
-                          &zone, CptrReal, ldc );*/
-//printf("\n"); 
-		//upcast_block(swapZoneC, N, M, ldc, CptrReal);
-		
-#else
-            cublasZgemm( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
-                         M, N, K,
-                         &mzone, Aptr, lda,
-                                Bptr, ldb,
-                          &zone, CptrReal, ldc );
-                          
-#endif
-			//cudaDeviceSynchronize();
             flops += FLOPS_ZGEMM( M, N, K );
-            /*cudaMemcpy(f, &(CptrReal[0]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[0] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[1]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[1] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[2]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[2] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[6]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[6] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[7]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[7] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[8]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[8] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[12]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[12] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[13]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[13] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[14]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[14] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[18]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[18] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[19]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[19] = %.30f\n", *f);
-            cudaMemcpy(f, &(CptrReal[20]), sizeof(float), cudaMemcpyDeviceToHost);
-            printf("CptrReal[20] = %.30f\n", *f);
-            sleep(1);*/
         }
- 
-
     }
-}
-    //if(ay > 10)
-	//	printf("%d\n", ay);
+
 #if defined(PASTIX_GENERATE_MODEL)
     cudaStreamSynchronize( stream );
 #endif
@@ -748,9 +516,7 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
                  const cuDoubleComplex *A,
                        cuDoubleComplex *C,
                  const pastix_lr_t     *lowrank,
-                       cudaStream_t     stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat)
+                       cudaStream_t     stream )
 {
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex zone  = make_cuDoubleComplex( 1.0, 0.0);
@@ -792,19 +558,18 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
     cblk_m = blok->fcblknm;
     full_m = 0;
 
-    cublasSetStream( *cublas_handle, stream );
+    cublasSetKernelStream( stream );
     for (; (blok < lblok) && (blok->fcblknm == cblk_m); blok++) {
 
         Cptr = C + blok->coefind - offset;
         M   = blok_rownbr(blok);
         ldc = M;
 
-        cublasZtrsm( *cublas_handle,
-					 sidestr[side - PastixLeft],
+        cublasZtrsm( sidestr[side - PastixLeft],
                      uplostr[uplo - PastixUpper],
                      transstr[trans - PastixNoTrans],
                      diagstr[diag - PastixNonUnit],
-                     M, N, &zone,
+                     M, N, zone,
                      A, lda,
                      Cptr, ldc );
         full_m += M;
