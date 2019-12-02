@@ -198,4 +198,50 @@ pastix_zgemm_vbatched_nt(
         }
     }
 }
+
+void __global__ pastix_zscalo_kernel(
+			 pastix_int_t              M,
+			 pastix_int_t              N,
+             const cuDoubleComplex *A,
+             pastix_int_t              lda,
+             const cuDoubleComplex *D,
+             pastix_int_t              ldd,
+             cuDoubleComplex       *B,
+             pastix_int_t              ldb)
+{
+#if defined(PRECISION_z) || defined(PRECISION_c)
+
+#else
+	int x = blockIdx.x * blockDim.x + threadIdx.x;
+	int row = x % M;
+	int col = x / M;
+	if(col < N){
+		if((row == 20 && col == 30) || (row == 20 && col == 30)){
+			printf("GPU\n");
+			printf("B[%d] = A[%d] * D[%d];\n", row+col*ldb, row+col*lda, col*ldd);
+			printf("%f = %f * %f;\n", B[row+col*ldb], A[row+col*lda], D[col*ldd]);
+			B[row+col*ldb] = A[row+col*lda] * D[col*ldd];
+			printf("%f = %f * %f;\n", B[row+col*ldb], A[row+col*lda], D[col*ldd]);
+		}
+		else
+		{
+			B[row+col*ldb] = A[row+col*lda] * D[col*ldd];
+		}
+	}
+#endif
+}
+
+void pastix_zscalo(
+			 pastix_int_t              M,
+             pastix_int_t              N,
+             const cuDoubleComplex *A,
+             pastix_int_t              lda,
+             const cuDoubleComplex *D,
+             pastix_int_t              ldd,
+             cuDoubleComplex       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream )
+{
+	pastix_zscalo_kernel<<<(M*N+1023)/1024,1024,0,stream>>>(M, N, A, lda, D, ldd, B, ldb);
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////

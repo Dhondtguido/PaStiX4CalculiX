@@ -21,13 +21,13 @@
 #include "kernels_trace.h"
 #include "pastix_zcuda.h"
 #include "pastix_cuda.h"
-#include <cublas.h>
-#include <cublas_api.h>
 
-static char transstr[3] = { 'N', 'T', 'C' };
-static char sidestr[2] = { 'L', 'R' };
-static char uplostr[3] = { 'U', 'L', 'A' };
-static char diagstr[2] = { 'N', 'U' };
+static char transstr[3] = { CUBLAS_OP_N, CUBLAS_OP_T, CUBLAS_OP_C };
+static char sidestr[2] = { CUBLAS_SIDE_LEFT, CUBLAS_SIDE_RIGHT };
+static char uplostr[3] = { CUBLAS_FILL_MODE_UPPER, CUBLAS_FILL_MODE_LOWER, 'A' };
+static char diagstr[2] = { CUBLAS_DIAG_NON_UNIT, CUBLAS_DIAG_UNIT };
+
+int calls_zscalo_gpu = 0;
 
 void
 gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
@@ -70,7 +70,7 @@ gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
 
     C = C + ldc * ( blok->frownum - fcblk->fcolnum );
 
-    pastix_fermi_zgemmsp( 'N', transstr[trans - PastixNoTrans], M, N, K,
+    pastix_fermi_zgemmsp( CUBLAS_OP_N, transstr[trans - PastixNoTrans], M, N, K,
                           mzone, A + blok[s].coefind, lda,
                                  B + blok[0].coefind, ldb,
                           zone,  C, ldc,
@@ -354,14 +354,20 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
                  const cuDoubleComplex   *B,
                        cuDoubleComplex   *C,
                  const pastix_lr_t       *lowrank,
-                       cudaStream_t       stream )
+                       cudaStream_t       stream,
+					   cublasHandle_t *cublas_handle )
 {
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex mzone = make_cuDoubleComplex(-1.0, 0.0);
     cuDoubleComplex zone  = make_cuDoubleComplex( 1.0, 0.0);
 #else
+#if defined(PRECISION_z) || defined(PRECISION_c)
+    float mzone = -1.0;
+    float zone  =  1.0;
+#else
     double mzone = -1.0;
     double zone  =  1.0;
+#endif
 #endif
 /*
 #if defined(PRECISION_s)
@@ -416,7 +422,7 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
     K = cblk_colnbr( cblk );
     full_m = 0;
 
-    cublasSetKernelStream( stream );
+    cublasSetStream( *cublas_handle, stream );
     bC = blokC;
     for (bA = blokA; (bA < lblokK) && (bA->fcblknm == cblk_m); bA++) {
         M = blok_rownbr(bA);
@@ -438,11 +444,11 @@ gpublok_zgemmsp(       pastix_coefside_t  sideA,
             Bptr = B + bB->coefind - offsetB;
             ldb = N;
 
-            cublasZgemm( 'N', transstr[trans - PastixNoTrans],
+            cublasZgemm( *cublas_handle, CUBLAS_OP_N, transstr[trans - PastixNoTrans],
                          M, N, K,
-                         mzone, Aptr, lda,
+                         &mzone, Aptr, lda,
                                 Bptr, ldb,
-                          zone, Cptr + (bA->frownum - bC->frownum)
+                          &zone, Cptr + (bA->frownum - bC->frownum)
                                      + (bB->frownum - fcblk->fcolnum) * ldc, ldc );
 
             flops += FLOPS_ZGEMM( M, N, K );
@@ -516,12 +522,17 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
                  const cuDoubleComplex *A,
                        cuDoubleComplex *C,
                  const pastix_lr_t     *lowrank,
-                       cudaStream_t     stream )
+                       cudaStream_t     stream,
+					   cublasHandle_t *cublas_handle )
 {
 #if defined(PRECISION_z) || defined(PRECISION_c)
     cuDoubleComplex zone  = make_cuDoubleComplex( 1.0, 0.0);
 #else
+#if defined(PRECISION_s)
+    float zone  =  1.0;
+#else
     double zone  =  1.0;
+#endif 
 #endif
 
 /*
@@ -558,18 +569,19 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
     cblk_m = blok->fcblknm;
     full_m = 0;
 
-    cublasSetKernelStream( stream );
+    cublasSetStream( *cublas_handle, stream );
     for (; (blok < lblok) && (blok->fcblknm == cblk_m); blok++) {
 
         Cptr = C + blok->coefind - offset;
         M   = blok_rownbr(blok);
         ldc = M;
 
-        cublasZtrsm( sidestr[side - PastixLeft],
+        cublasZtrsm( *cublas_handle,
+					 sidestr[side - PastixLeft],
                      uplostr[uplo - PastixUpper],
                      transstr[trans - PastixNoTrans],
                      diagstr[diag - PastixNonUnit],
-                     M, N, zone,
+                     M, N, &zone,
                      A, lda,
                      Cptr, ldc );
         full_m += M;
@@ -585,4 +597,178 @@ gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
                        full_m, N, 0, flops, time );
 
     (void)lowrank; (void)coef;
+}
+
+/**
+ ******************************************************************************
+ *
+ * @brief Scale a matrix by a diagonal out of place
+ *
+ * Perform the operation: B <- op(A) * D, where A is a general matrix, and D a
+ * diagonal matrix.
+ *
+ *******************************************************************************
+ *
+ * @param[in] trans
+ *         @arg PastixNoTrans:   No transpose, op( A ) = A;
+ *         @arg PastixTrans:     Transpose, op( A ) = A;
+ *         @arg PastixConjTrans: Conjugate Transpose, op( A ) = conj(A).
+ *
+ * @param[in] M
+ *          Number of rows of the matrix B.
+ *          Number of rows of the matrix A.
+ *
+ * @param[in] N
+ *          Number of columns of the matrix B.
+ *          Number of columns of the matrix A.
+ *
+ * @param[in] A
+ *          Matrix of size lda-by-N.
+ *
+ * @param[in] lda
+ *          Leading dimension of the array A. lda >= max(1,M).
+ *
+ * @param[in] D
+ *          Diagonal matrix of size ldd-by-N.
+ *
+ * @param[in] ldd
+ *          Leading dimension of the array D. ldd >= 1.
+ *
+ * @param[inout] B
+ *          Matrix of size LDB-by-N.
+ *
+ * @param[in] ldb
+ *          Leading dimension of the array B. ldb >= max(1,M)
+ *
+ *******************************************************************************
+ *
+ * @retval PASTIX_SUCCESS successful exit
+ * @retval <0 if -i, the i-th argument had an illegal value
+ * @retval 1, not yet implemented
+ *
+ ******************************************************************************/
+int
+gpu_zscalo( pastix_trans_t            trans,
+             pastix_int_t              M,
+             pastix_int_t              N,
+             const cuDoubleComplex *A,
+             pastix_int_t              lda,
+             const cuDoubleComplex *D,
+             pastix_int_t              ldd,
+             cuDoubleComplex       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream  )
+{
+
+#if !defined(NDEBUG)
+    if ((trans < PastixNoTrans)   ||
+        (trans > PastixConjTrans))
+    {
+        return -1;
+    }
+
+    if (M < 0) {
+        return -2;
+    }
+    if (N < 0) {
+        return -3;
+    }
+    if ( lda < pastix_imax(1,M) )
+    {
+        return -5;
+    }
+    if ( ldd < 1 )
+    {
+        return -7;
+    }
+    if ( ldb < pastix_imax(1,M) ) {
+        return -9;
+    }
+#endif
+
+	pastix_zscalo(M, N, A, lda, D, ldd, B, ldb, stream );
+
+    return PASTIX_SUCCESS;
+}
+
+
+/**
+ *******************************************************************************
+ *
+ * @brief Copy the lower terms of the block with scaling for the two-terms
+ * algorithm.
+ *
+ * Performs B = op(A) * D
+ *
+ *******************************************************************************
+ *
+ * @param[in] trans
+ *         @arg PastixNoTrans:   No transpose, op( A ) = A;
+ *         @arg PastixTrans:     Transpose, op( A ) = A;
+ *         @arg PastixConjTrans: Conjugate Transpose, op( A ) = conj(A).
+ *
+ * @param[in] cblk
+ *          Pointer to the structure representing the panel to factorize in the
+ *          cblktab array.  Next column blok must be accessible through cblk[1].
+ *
+ * @param[in] blok_m
+ *          Index of the off-diagonal block to be solved in the cblk. All blocks
+ *          facing the same cblk, in the current column block will be solved.
+ *
+ * @param[in] A
+ *          The pointer to the A matrix of size blok_rownbr( blok ) - by -
+ *          cblk_colnbr( cblk ) that stores L, where L is the
+ *          lower coeftab array.
+ *
+ * @param[in] D
+ *          The pointer to the diagonal matrix D size cblk_colnbr(cblk) - by -
+ *          cblk_colnbr(cblk). D is usually the diagonal matrix taken from the
+ *          diagonal of the diagonal block.
+ *
+ * @param[inout] B
+ *          The pointer to the B matrix of size blok_rownbr( blok ) - by -
+ *          cblk_colnbr( cblk ) that will holds the result op(A) * D on exit.
+ *
+ *******************************************************************************/
+void
+gpublok_zscalo( pastix_trans_t            trans,
+                SolverCblk               *cblk,
+                pastix_int_t              blok_m,
+                const cuDoubleComplex *A,
+                const cuDoubleComplex *D,
+                cuDoubleComplex       *B,
+                cudaStream_t     stream )
+{
+    const SolverBlok *fblok, *lblok, *blok;
+    pastix_int_t M, N, ldd, offset, cblk_m;
+    const cuDoubleComplex *lA;
+    cuDoubleComplex *lB;
+
+    N     = cblk_colnbr( cblk );
+    fblok = cblk[0].fblokptr;  /* The diagonal block */
+    lblok = cblk[1].fblokptr;  /* The diagonal block of the next cblk */
+    ldd   = blok_rownbr( fblok ) + 1;
+
+    assert( blok_rownbr(fblok) == N );
+    assert( cblk->cblktype & CBLK_LAYOUT_2D );
+
+    blok   = fblok + blok_m;
+    offset = blok->coefind;
+    cblk_m = blok->fcblknm;
+
+    for (; (blok < lblok) && (blok->fcblknm == cblk_m); blok++) {
+        lA  = A + blok->coefind - offset;
+        lB  = B + blok->coefind - offset;
+        M   = blok_rownbr(blok);
+        /* Compute B = op(A) * D */
+        cudaDeviceSynchronize();
+        //printf("M = %ld\n", M);
+        //printf("N = %ld\n", N);
+        gpu_zscalo( trans, M, N,
+                     lA, M, D, ldd, lB, M, stream );
+        cudaDeviceSynchronize();
+
+		calls_zscalo_gpu++;
+		printf("calls GPU: %d\n", calls_zscalo_gpu);
+    }
 }

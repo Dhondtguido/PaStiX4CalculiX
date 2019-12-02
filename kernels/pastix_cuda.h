@@ -111,6 +111,50 @@ pastix_fermi_sgemmsp(
     int blocknbr, const int *blocktab, int fblocknbr, const int *fblocktab,
     cudaStream_t stream );
 
+void pastix_zscalo(
+			 pastix_int_t              M,
+             pastix_int_t              N,
+             const cuDoubleComplex *A,
+             pastix_int_t              lda,
+             const cuDoubleComplex *D,
+             pastix_int_t              ldd,
+             cuDoubleComplex       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream );
+
+void pastix_cscalo(
+			 pastix_int_t              M,
+             pastix_int_t              N,
+             const cuFloatComplex *A,
+             pastix_int_t              lda,
+             const cuFloatComplex *D,
+             pastix_int_t              ldd,
+             cuFloatComplex       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream );
+
+void pastix_dscalo(
+			 pastix_int_t              M,
+             pastix_int_t              N,
+             const double *A,
+             pastix_int_t              lda,
+             const double *D,
+             pastix_int_t              ldd,
+             double       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream );
+
+void pastix_sscalo(
+			 pastix_int_t              M,
+             pastix_int_t              N,
+             const float *A,
+             pastix_int_t              lda,
+             const float *D,
+             pastix_int_t              ldd,
+             float       *B,
+             pastix_int_t              ldb,
+             cudaStream_t     stream );
+
 #ifdef __cplusplus
 }
 #endif

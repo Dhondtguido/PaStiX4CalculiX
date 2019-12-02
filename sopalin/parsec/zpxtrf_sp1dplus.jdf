@@ -42,7 +42,6 @@ lwork     [type = "pastix_int_t"]
 cpu_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->cpu_coefs))[PastixKernelGEMMCblk2d2d][0])" ]
 gpu_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->gpu_coefs))[PastixKernelGEMMCblk2d2d][0])" ]
 cublas_handle [ type = "cublasHandle_t *" hidden = on default = "(sopalin_data->cublas_handle)" ]
-cublas_stat [ type = "cublasStatus_t *" hidden = on default = "(sopalin_data->cublas_stat)" ]
 
 /**************************************************
  *                   PXTRF                        *
@@ -191,12 +190,12 @@ BODY [ type=CUDA
                                descA->d_blocktab[parsec_body.index],
                                lcblk, blok, fcblk,
                                A, A, C,
-                               parsec_body.stream, cublas_handle, cublas_stat );
+                               parsec_body.stream );
 #else
             gpucblk_zgemmsp( PastixLCoef, PastixLCoef, PastixTrans,
                              lcblk, blok, fcblk,
                              A, A, C,
-                             &lowrank, parsec_body.stream, cublas_handle, cublas_stat );
+                             &lowrank, parsec_body.stream );
 #endif /* defined(PASTIX_CUDA_FERMI) */
         }
     }

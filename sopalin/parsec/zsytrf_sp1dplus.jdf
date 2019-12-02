@@ -207,12 +207,12 @@ BODY [ type=CUDA
                                descA->d_blocktab[parsec_body.index],
                                lcblk, blok, fcblk,
                                A, B, C,
-                               parsec_body.stream, cublas_handle, cublas_stat );
+                               parsec_body.stream );
 #else
             gpucblk_zgemmsp( PastixLCoef, PastixUCoef, PastixTrans,
                              lcblk, blok, fcblk,
                              A, B, C,
-                             &lowrank, parsec_body.stream, cublas_handle, cublas_stat );
+                             &lowrank, parsec_body.stream );
 #endif /* defined(PASTIX_CUDA_FERMI) */
         }
     }

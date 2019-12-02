@@ -32,28 +32,29 @@
 void gpucblk_zgemmsp( pastix_coefside_t sideA, pastix_coefside_t sideB, pastix_trans_t trans,
                       const SolverCblk *cblk, const SolverBlok *blok, SolverCblk *fcblk,
                       const cuDoubleComplex *A, const cuDoubleComplex *B, cuDoubleComplex *C,
-                      const pastix_lr_t *lowrank, cudaStream_t stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat );
+                      const pastix_lr_t *lowrank, cudaStream_t stream );
 
 void gpublok_zgemmsp( pastix_coefside_t sideA, pastix_coefside_t sideB, pastix_trans_t trans,
                       const SolverCblk *cblk, SolverCblk *fcblk,
                       pastix_int_t blok_mk, pastix_int_t blok_nk, pastix_int_t blok_mn,
                       const cuDoubleComplex *A, const cuDoubleComplex *B, cuDoubleComplex *C,
                       const pastix_lr_t *lowrank, cudaStream_t stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat,
-					   void * swapZoneA,
-					   void * swapZoneB,
-					   void * swapZoneC );
+					   cublasHandle_t *cublas_handle );
 
 void gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
                       pastix_trans_t trans, pastix_diag_t diag,
                       SolverCblk *cblk, pastix_int_t blok_m,
                       const cuDoubleComplex *A, cuDoubleComplex *C,
                       const pastix_lr_t *lowrank, cudaStream_t stream ,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat);
+					   cublasHandle_t *cublas_handle);
+					
+void gpublok_zscalo( pastix_trans_t            trans,
+                SolverCblk               *cblk,
+                pastix_int_t              blok_m,
+                const cuDoubleComplex *A,
+                const cuDoubleComplex *D,
+                cuDoubleComplex       *B,
+                cudaStream_t     stream );
 
 void gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                         pastix_uplo_t uplo, pastix_trans_t trans,
@@ -64,9 +65,7 @@ void gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                         const cuDoubleComplex *A,
                         const cuDoubleComplex *B,
                         cuDoubleComplex *C,
-                        cudaStream_t stream,
-					   cublasHandle_t *cublas_handle,
-					   cublasStatus_t *cublas_stat );
+                        cudaStream_t stream);
 
 /**
  *    @}

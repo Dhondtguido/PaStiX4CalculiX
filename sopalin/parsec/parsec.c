@@ -85,7 +85,6 @@ pastix_parsec_init( pastix_data_t *pastix,
         parsec_setenv_mca_param( "device_cuda_max_streams", "3", &environ );
         parsec_setenv_mca_param( "device_cuda_max_events_per_stream", "1", &environ );
 #endif
-        parsec_setenv_mca_param( "device_cuda_max_streams", "3", &environ );
         rc = asprintf(&value, "%d", (int)(iparm[IPARM_GPU_NBR]));
         parsec_setenv_mca_param( "device_cuda_enabled", value, &environ );
 
