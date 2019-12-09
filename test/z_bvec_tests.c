@@ -176,6 +176,7 @@ z_bvec_check( pastix_data_t *pastix_data,
     int                 rc = 0;
     pastix_complex64_t *x, *y;
     pastix_complex64_t  alpha = 3.5;
+    pastix_complex64_t result;
     struct z_solver     solver;
 
     z_refine_init( &solver, pastix_data );
@@ -207,8 +208,9 @@ z_bvec_check( pastix_data_t *pastix_data,
 
     printf("========== dot function time ==========\n");
     clockStart(timer);
+    
     for( i=0; i<50; ++i ) {
-        solver.dot( pastix_data, m, x, y );
+        solver.dot( pastix_data, m, x, y, &result );
     }
     clockStop(timer);
     printf("    Time for dot  (N= %ld)         : %e \n", (long)m, clockVal(timer)/50.);
@@ -262,7 +264,7 @@ z_bcsc_spmv_time( pastix_data_t *pastix_data,
 
     clockStart(timer);
     for ( i = 0; i < 50 ; ++i) {
-        solver.spmv( pastix_data, PastixNoTrans, alpha, x, beta, y );
+        solver.spmv( pastix_data, PastixNoTrans, alpha, x, beta, y, NULL );
     }
     clockStop(timer);
 

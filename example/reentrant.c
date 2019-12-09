@@ -143,7 +143,7 @@ static void *solve_smp(void *arg)
      * Solve the linear system (and perform the optional refinement)
      */
     pastix_task_solve( pastix_data, nrhs, x, spm->n );
-    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
+    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n, spm );
 
     if ( check )
     {

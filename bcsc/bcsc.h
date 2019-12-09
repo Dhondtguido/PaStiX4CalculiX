@@ -36,7 +36,7 @@ typedef struct bcsc_cblk_s {
 struct pastix_bcsc_s {
     int           gN;      /**< Global number of vertices                                                      */
     int           n;       /**< Local number of vertices                                                       */
-    long           numElements;       /**< Local number of vertices                                                       */
+    long          numElements;       /**< Local number of vertices                                                       */
     int           mtxtype; /**< Matrix structure: PastixGeneral, PastixSymmetric or PastixHermitian.           */
     int           flttype; /**< valtab datatype: PastixFloat, PastixDouble, PastixComplex32 or PastixComplex64 */
     pastix_int_t  cscfnbr; /**< Number of column blocks.                                                       */

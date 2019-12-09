@@ -28,6 +28,8 @@ endif(PASTIX_WITH_EZTRACE)
 set(HEADERS
   pastix_zcores.h
   pastix_zcuda.h
+  cpu_z_spmv.h
+  gpu_z_spmv.h
   pastix_zlrcores.h
   z_nan_check.h
 )
@@ -79,6 +81,7 @@ set(SOURCES
   cpucblk_zschur.c
   # Solve operation
   solve_ztrsmsp.c
+  cpu_z_spmv.c
 )
 
 precisions_rules_py(generated_sources
@@ -90,13 +93,14 @@ set(kernels_sources
   lowrank.c
   half_prec_utility.cu
   kernels_trace.c
-  )
+)
 
 if(PASTIX_WITH_CUDA)
    set( CUDA_SOURCES
      # GPU kernel
      gpu_zgemmsp.c
-    )
+     gpu_z_spmv.c
+   )
    set(CUDA_generated_files "")
    precisions_rules_py(CUDA_generated_files
         "${CUDA_SOURCES}"

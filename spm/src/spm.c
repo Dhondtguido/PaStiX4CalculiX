@@ -112,6 +112,7 @@ spmInit( spmatrix_t *spm )
     spm->rowptr   = NULL;
     spm->loc2glob = NULL;
     spm->values   = NULL;
+    spm->valuesDouble   = NULL;
 }
 
 /**
@@ -240,6 +241,8 @@ spmAlloc( spmatrix_t *spm )
     }
     valsize = valsize * spm_size_of( spm->flttype );
     spm->values = malloc(valsize);
+    if(spm->flttype == SpmFloat)
+		spm->valuesDouble = malloc(valsize * sizeof(double));
 }
 
 /**
@@ -271,6 +274,10 @@ spmExit( spmatrix_t *spm )
     if(spm->values != NULL) {
         free(spm->values);
         spm->values = NULL;
+    }
+    if(spm->valuesDouble != NULL) {
+        free(spm->valuesDouble); 
+        spm->valuesDouble = NULL;
     }
     if(spm->dofs != NULL) {
         free(spm->dofs);
@@ -877,6 +884,10 @@ spmCopy( const spmatrix_t *spm )
         valsize = valsize * spm_size_of( spm->flttype );
         newspm->values = malloc(valsize);
         memcpy( newspm->values, spm->values, valsize );
+    }
+    if(spm->valuesDouble != NULL) {
+        newspm->valuesDouble = malloc(2 * valsize);
+        memcpy( newspm->valuesDouble, spm->valuesDouble, 2 * valsize );
     }
 
     return newspm;

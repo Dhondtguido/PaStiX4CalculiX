@@ -23,7 +23,8 @@
 #include "bcsc_z.h"
 #include "frobeniusupdate.h"
 #include "cblas.h"
-
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 /**
  *******************************************************************************
  *
@@ -188,6 +189,63 @@ bvec_znrm2_smp( pastix_data_t            *pastix_data,
     return arg.scale * sqrt( arg.sumsq );
 }
 
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Compute the norm 2 of a vector. (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          Provide information to the parallel version, to know the global
+ *          context (Number of thread, barrier, ...).
+ *
+ * @param[in] n
+ *          The size of the vector x.
+ *
+ * @param[in] x
+ *          The vector x of size n.
+ *
+ *******************************************************************************
+ *
+ * @retval the norm 2 of x.
+ *
+ *******************************************************************************/
+double
+bvec_znrm2_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              n,
+                const cuDoubleComplex *x )
+{
+    (void)pastix_data;
+#if defined(PRECISION_z) || defined(PRECISION_d)
+    double norm;
+#else
+	float norm;
+#endif
+
+#if defined(PRECISION_z)
+	cublasDznrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+#endif
+#if defined(PRECISION_c)
+	cublasScnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+#endif
+#if defined(PRECISION_d)
+	cublasDnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+#endif
+#if defined(PRECISION_s)
+	cublasSnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+#endif
+
+#if defined(PRECISION_s) || defined(PRECISION_c)
+    return (double) norm;
+#else
+	return norm;
+#endif
+}
+
 /**
  *******************************************************************************
  *
@@ -303,6 +361,39 @@ bvec_zscal_smp( pastix_data_t      *pastix_data,
 {
     struct z_argument_scal_s arg = {n, alpha, x};
     isched_parallel_call( pastix_data->isched, pthread_bvec_zscal, &arg );
+}
+
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Scale a vector by the scalar alpha. (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          Provide information to the parallel version, to know the global
+ *          context (Number of thread, barrier, ...).
+ *
+ * @param[in] n
+ *          The size of the vector x.
+ *
+ * @param[in] alpha
+ *          The scalar to sclae the vector x.
+ *
+ * @param[inout] x
+ *          The vector x to scale.
+ *
+ *******************************************************************************/
+void
+bvec_zscal_cuda( pastix_data_t      *pastix_data,
+                pastix_int_t        n,
+                cuDoubleComplex  alpha,
+                cuDoubleComplex *x)
+{
+    cublasZscal( *(pastix_data->cublas_handle), n, &alpha, x, 1 );
 }
 
 /**
@@ -437,6 +528,43 @@ bvec_zaxpy_smp( pastix_data_t            *pastix_data,
     isched_parallel_call( pastix_data->isched, pthread_bvec_zaxpy, &args );
 }
 
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Compute y <- alpha * x + y. (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The information about sequential and parallel version (Number of
+ *          thread, ...).
+-*
+ * @param[in] n
+ *          The size of the vectors.
+ *
+ * @param[in] alpha
+ *          A scalar.
+ *
+ * @param[in] x
+ *          The vector x.
+ *
+ * @param[inout] y
+ *          The vector y.
+ *
+ *******************************************************************************/
+void
+bvec_zaxpy_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              n,
+                cuDoubleComplex        alpha,
+                const cuDoubleComplex *x,
+                cuDoubleComplex       *y)
+{
+    cublasZaxpy( *(pastix_data->cublas_handle), n, &alpha, x, 1, y, 1 );
+}
+
+
 struct z_argument_dotc_s
 {
   pastix_int_t              n;
@@ -474,24 +602,24 @@ struct z_argument_dotc_s
  * @retval the scalar product of x and conj(y).
  *
  *******************************************************************************/
-pastix_complex64_t
+void
 bvec_zdotc_seq( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
                 const pastix_complex64_t *x,
-                const pastix_complex64_t *y )
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r )
 {
     (void)pastix_data;
     int i;
     pastix_complex64_t *xptr = (pastix_complex64_t*)x;
     pastix_complex64_t *yptr = (pastix_complex64_t*)y;
-    pastix_complex64_t r = 0.0;
 
+	*r = 0.0;
+	
     for (i=0; i<n; i++, xptr++, yptr++)
     {
-        r += (*xptr) * conj(*yptr);
+        *r += (*xptr) * conj(*yptr);
     }
-
-    return r;
 }
 
 /**
@@ -572,17 +700,60 @@ pthread_bvec_zdotc( isched_thread_t *ctx,
  *          The result of the scalar product
  *
  *******************************************************************************/
-pastix_complex64_t
+void
 bvec_zdotc_smp( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
                 const pastix_complex64_t *x,
-                const pastix_complex64_t *y )
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r )
 {
     struct z_argument_dotc_s arg = {n, x, y, PASTIX_ATOMIC_UNLOCKED, 0.0};
     isched_parallel_call( pastix_data->isched, pthread_bvec_zdotc, &arg );
 
-    return arg.sum;
+    *r = arg.sum;
 }
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Compute the scalar product x.conj(y). (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The information about sequential and parallel version (Number of
+ *          thread, ...).
+ *
+ * @param[in] n
+ *          The size of the vectors.
+ *
+ * @param[in] x
+ *          The vector x.
+ *
+ * @param[in] y
+ *          The vector y.
+ *
+ *******************************************************************************
+ *
+ * @retval the scalar product of x and conj(y).
+ *
+ *******************************************************************************/
+void
+bvec_zdotc_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              n,
+                const cuDoubleComplex *x,
+                const cuDoubleComplex *y,
+                cuDoubleComplex       *r)
+{
+    (void)pastix_data;
+    cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
+    cublasZdotc(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
+	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
+}
+
+
 #endif
 
 /**
@@ -612,24 +783,24 @@ bvec_zdotc_smp( pastix_data_t            *pastix_data,
  * @retval the scalar product of x and y.
  *
  *******************************************************************************/
-pastix_complex64_t
+void
 bvec_zdotu_seq( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
                 const pastix_complex64_t *x,
-                const pastix_complex64_t *y )
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r )
 {
     (void)pastix_data;
     int i;
     const pastix_complex64_t *xptr = x;
     const pastix_complex64_t *yptr = y;
-    pastix_complex64_t        r = 0.0;
+
+	*r = 0.0;
 
     for (i=0; i<n; i++, xptr++, yptr++)
     {
-        r += (*xptr) * (*yptr);
+        *r += (*xptr) * (*yptr);
     }
-
-    return r;
 }
 
 /**
@@ -716,16 +887,56 @@ pthread_bvec_zdotu( isched_thread_t *ctx,
  * @return The allocated vector
  *
  *******************************************************************************/
-pastix_complex64_t
+void
 bvec_zdotu_smp( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
                 const pastix_complex64_t *x,
-                const pastix_complex64_t *y )
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r )
 {
     struct z_argument_dotc_s arg = {n, x, y, PASTIX_ATOMIC_UNLOCKED, 0.0};
     isched_parallel_call( pastix_data->isched, pthread_bvec_zdotu, &arg );
 
-    return arg.sum;
+    *r = arg.sum;
+}
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Compute the scalar product x.y. (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The information about sequential and parallel version (Number of
+ *          thread, ...).
+ *
+ * @param[in] x
+ *          The vector x.
+ *
+ * @param[in] y
+ *          The vector y.
+ *
+ * @param[in] n
+ *          The size of the vectors.
+ *
+ *******************************************************************************
+ *
+ * @retval the scalar product of x and y.
+ *
+ *******************************************************************************/
+void
+bvec_zdotu_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              n,
+                const cuDoubleComplex *x,
+                const cuDoubleComplex *y,
+                cuDoubleComplex       *r  )
+{
+	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
+    cublasZdotu(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
+	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
 }
 
 /**
@@ -978,6 +1189,40 @@ bvec_zcopy_smp( pastix_data_t            *pastix_data,
     isched_parallel_call( pastix_data->isched, pthread_bvec_zcopy, &args );
 }
 
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Copy a vector y = x (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The information about sequential and parallel version (Number of
+ *          thread, ...).
+ *
+ * @param[in] n
+ *          The number of elements of vectors x and y
+ *
+ * @param[in] x
+ *          The vector to be copied
+ *
+ * @param[inout] y
+ *          The vector copy of x
+ *
+ *******************************************************************************/
+void
+bvec_zcopy_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              n,
+                const cuDoubleComplex *x,
+                cuDoubleComplex       *y )
+{
+    (void)pastix_data;
+    cudaMemcpy( y, x, n * sizeof(cuDoubleComplex), cudaMemcpyDeviceToDevice );
+}
+
 /**
  *******************************************************************************
  *
@@ -999,10 +1244,10 @@ void bcsc_zspsv( pastix_data_t      *pastix_data,
                  pastix_complex64_t *b )
 {
     pastix_int_t n = pastix_data->bcsc->gN;
-    int temp = pastix_data->iparm[IPARM_VERBOSE];
-    pastix_data->iparm[IPARM_VERBOSE] = 0;
+    //int temp = pastix_data->iparm[IPARM_VERBOSE];
+    //pastix_data->iparm[IPARM_VERBOSE] = 0;
     pastix_subtask_solve( pastix_data, 1, b, n );
-    pastix_data->iparm[IPARM_VERBOSE] = temp;
+    //pastix_data->iparm[IPARM_VERBOSE] = temp;
 }
 
 /**
@@ -1183,4 +1428,61 @@ bvec_zgemv_smp( pastix_data_t            *pastix_data,
     struct z_gemv_s arg = {m, n, alpha, A, lda, x, beta, y};
 
     isched_parallel_call( pastix_data->isched, pthread_bvec_zgemv, &arg );
+}
+
+
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup bcsc
+ *
+ * @brief Compute \f[ y = \alpha A x + \beta y \f] (Sequential version)
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The information about sequential and parallel version (Number of
+ *          thread, ...).
+ *
+ * @param[in] m
+ *          The number of rows of the matrix A, and the size of y.
+ *
+ * @param[in] n
+ *          The number of columns of the matrix A, and the size of x.
+ *
+ * @param[in] alpha
+ *          The scalar alpha.
+ *
+ * @param[in] A
+ *          The dense matrix A of size lda-by-n.
+ *
+ * @param[in] lda
+ *          The leading dimension of the matrix A. lda >= max(1,m)
+ *
+ * @param[in] x
+ *          The vector x of size n.
+ *
+ * @param[in] beta
+ *          The scalar beta.
+ *
+ * @param[inout] y
+ *          On entry, the initial vector y of size m.
+ *          On exit, the updated vector.
+ *
+ *******************************************************************************/
+void
+bvec_zgemv_cuda( pastix_data_t            *pastix_data,
+                pastix_int_t              m,
+                pastix_int_t              n,
+                cuDoubleComplex        alpha,
+                const cuDoubleComplex *A,
+                pastix_int_t              lda,
+                const cuDoubleComplex *x,
+                cuDoubleComplex        beta,
+                cuDoubleComplex       *y )
+{
+    cublasZgemv( *(pastix_data->cublas_handle), CUBLAS_OP_N, m, n,
+                 &alpha, A, lda, x, 1,
+                 &beta, y, 1 );
 }

@@ -75,6 +75,7 @@ typedef struct spmatrix_s {
     spm_int_t     *rowptr;  /**< List of edges for each vertex [+baseval]                       */
     spm_int_t     *loc2glob;/**< Corresponding numbering from local to global [+baseval]        */
     void          *values;  /**< Values stored in the matrix                                    */
+    void          *valuesDouble;  /**< Values stored in the matrix                                    */
 } spmatrix_t;
 
 /**

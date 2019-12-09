@@ -294,7 +294,7 @@ void core_zhetrfsp1d_gemm( const SolverCblk *cblk, const SolverBlok *blok, Solve
 void core_zsytrfsp1d_gemm( const SolverCblk *cblk, const SolverBlok *blok, SolverCblk *fcblk,
                            const pastix_complex64_t *L, pastix_complex64_t *C,
                            pastix_complex64_t *work );
-
+                           
 /**
  * @}
  */

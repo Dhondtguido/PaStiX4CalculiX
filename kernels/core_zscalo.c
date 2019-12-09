@@ -84,7 +84,7 @@ core_zscalo( pastix_trans_t            trans,
     pastix_complex64_t alpha;
     pastix_int_t i, j;
 
-printf("in core_zscalo\n");
+//printf("in core_zscalo\n");
 
 #if !defined(NDEBUG)
     if ((trans < PastixNoTrans)   ||
@@ -112,44 +112,11 @@ printf("in core_zscalo\n");
     }
 #endif
 
-    if (trans == PastixConjTrans) {
-		printf("in here ???????????\n");
-        for( j=0; j<N; j++, D += ldd ) {
-            alpha = *D;
-            for( i=0; i<M; i++, B++, A++ ) {
-                *B = conj(*A) * alpha;
-            }
-            A += lda - M;
-            B += ldb - M;
-        }
-    }
-    else {
-		printf("no, here\n");
-		/*
-        for( j=0; j<N; j++, D += ldd ) {
-            alpha = *D;
-            for( i=0; i<M; i++, B++, A++ ) {
-                *B = (*A) * alpha;
-            }
-            A += lda - M;
-            B += ldb - M;
-        }*/
-        for( j=0; j<N; j++ ) {
-            for( i=0; i<M; i++ ) {
-				if((i == 20 && j == 30) || (i == 20 && j == 30)){
-					printf("CPU\n");
-					printf("B[%ld] = A[%ld] * D[%ld];\n", i+j*ldb, i+j*lda, j*ldd);
-					printf("%f = %f * %f;\n", B[i+j*ldb], A[i+j*lda], D[j*ldd]);
-					B[i+j*ldb] = A[i+j*lda] * D[ldd*j];
-					printf("%f = %f * %f;\n", B[i+j*ldb], A[i+j*lda], D[j*ldd]);
-				}
-				else
-				{
-					B[i+j*ldb] = A[i+j*lda] * D[ldd*j];
-				}
-            }
-        }
-    }
+	for( j=0; j<N; j++ ) {
+		for( i=0; i<M; i++ ) {
+				B[i+j*ldb] = A[i+j*lda] * D[ldd*j];
+		}
+	}
     return PASTIX_SUCCESS;
 }
 
@@ -363,11 +330,8 @@ cpublok_zscalo( pastix_trans_t            trans,
             lB  = B + blok->coefind - offset;
             M   = blok_rownbr(blok);
 
-            /* Compute B = op(A) * D */
             core_zscalo( trans, M, N,
                          lA, M, D, ldd, lB, M );
-            calls_zscalo_cpu++;
-			printf("calls CPU: %d\n", calls_zscalo_cpu);
         }
     }
 }

@@ -43,7 +43,7 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
+pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
 {
     struct z_solver     solver;
     pastix_int_t        n;
@@ -57,7 +57,8 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
     pastix_complex64_t *gradp;
     pastix_complex64_t *gradz;
     pastix_complex64_t *grad2;
-    double normb, normx, normr, alpha, beta;
+    pastix_complex64_t alpha, beta;
+    double normb, normx, normr;
     double resid_b, eps;
 
     memset( &solver, 0, sizeof(struct z_solver) );
@@ -86,7 +87,7 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
     /* Compute r0 = b - A * x */
     solver.copy( pastix_data, n, b, gradr );
     if ( normx > 0. ) {
-        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr );
+        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr, NULL );
     }
     normr = solver.norm( pastix_data, n, gradr );
     resid_b = normr / normb;
@@ -107,11 +108,11 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
         nb_iter++;
 
         /* grad2 = A * p */
-        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradp, 0., grad2 );
+        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradp, 0., grad2, NULL );
 
         /* alpha = <r, z> / <Ap, p> */
-        beta  = solver.dot( pastix_data, n, gradr, gradz );
-        alpha = solver.dot( pastix_data, n, grad2, gradp );
+        solver.dot( pastix_data, n, gradr, gradz, &beta );
+        solver.dot( pastix_data, n, grad2, gradp, &alpha );
         alpha = beta / alpha;
 
         /* x = x + alpha * p */
@@ -127,7 +128,7 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
         }
 
         /* beta = <r', z> / <r, z> */
-        alpha = solver.dot( pastix_data, n, gradr, gradz );
+        solver.dot( pastix_data, n, gradr, gradz, &alpha );
         beta  = alpha / beta;
 
         /* p = z + beta * p */

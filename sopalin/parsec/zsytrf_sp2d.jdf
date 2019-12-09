@@ -385,34 +385,34 @@ RW    C   <-  isTwoD & noskip & (first == last) ? A OneToTwoD( k, m )
 
 ; %{ return cblknbr - k; %}
 
-BODY [ type=CUDA 
-       device=%{ SolverCblk *lcblk = datacode->cblktab + k; 
-                 if( !isTwoD || !noskip || 
-                     (lcblk->cblktype & (CBLK_COMPRESSED|CBLK_IN_SCHUR)) ) 
-                 { 
-                     return -2; 
-                 } else { 
-                     return -1; 
-                 } 
-                 %} 
-       pushout=forced_pushout ] 
-#if defined(PASTIX_WITH_CUDA) 
-{ 
-    if( isTwoD && noskip ) { 
-        SolverCblk *cblk  = datacode->cblktab + k; 
-        /*assert( !(cblk->cblktype & CBLK_COMPRESSED ) ); */
-        if (!(cblk->cblktype & CBLK_IN_SCHUR)) { 
-            gpublok_ztrsmsp( PastixLCoef, PastixRight, PastixUpper, 
-                             PastixNoTrans, PastixNonUnit, 
-                             cblk, m, A, C, &lowrank, 
-                             parsec_body.stream, cublas_handle );
-                             
-            gpublok_zscalo( PastixTrans, cblk, m, C, A, WS, parsec_body.stream );
-        }
-    }
-}
-#endif
-END
+/*BODY [ type=CUDA */
+/*       device=%{ SolverCblk *lcblk = datacode->cblktab + k; */
+/*                 if( !isTwoD || !noskip || */
+/*                     (lcblk->cblktype & (CBLK_COMPRESSED|CBLK_IN_SCHUR)) ) */
+/*                 { */
+/*                     return -2; */
+/*                 } else { */
+/*                     return -1; */
+/*                 } */
+/*                 %} */
+/*       pushout=forced_pushout ] */
+/*#if defined(PASTIX_WITH_CUDA) */
+/*{ */
+/*    if( isTwoD && noskip ) { */
+/*        SolverCblk *cblk  = datacode->cblktab + k; */
+       /*assert( !(cblk->cblktype & CBLK_COMPRESSED ) ); */
+/*        if (!(cblk->cblktype & CBLK_IN_SCHUR)) { */
+/*            gpublok_ztrsmsp( PastixLCoef, PastixRight, PastixUpper, */
+/*                             PastixNoTrans, PastixNonUnit, */
+/*                             cblk, m, A, C, &lowrank, */
+/*                             parsec_body.stream, cublas_handle );*/
+/*                             */
+/*            gpublok_zscalo( PastixTrans, cblk, m, C, A, WS, parsec_body.stream, cublas_handle  );*/
+/*        }*/
+/*    }*/
+/*}*/
+/*#endif*/
+/*END*/
 
 BODY
 {

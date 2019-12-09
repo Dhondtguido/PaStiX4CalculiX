@@ -38,6 +38,40 @@
 #include "sopalin/starpu/pastix_starpu.h"
 #endif
 
+extern long gpu_z_cblok_gemms;
+extern long gpu_z_blok_gemms;
+extern long gpu_z_trsm;
+
+extern long cpu_z_cblok_gemms;
+extern long cpu_z_blok_gemms;
+extern long cpu_z_trsm;
+
+extern long gpu_c_cblok_gemms;
+extern long gpu_c_blok_gemms;
+extern long gpu_c_trsm;
+
+extern long cpu_c_cblok_gemms;
+extern long cpu_c_blok_gemms;
+extern long cpu_c_trsm;
+
+extern long gpu_d_cblok_gemms;
+extern long gpu_d_blok_gemms;
+extern long gpu_d_trsm;
+
+extern long cpu_d_cblok_gemms;
+extern long cpu_d_blok_gemms;
+extern long cpu_d_trsm;
+
+extern long gpu_s_cblok_gemms;
+extern long gpu_s_blok_gemms;
+extern long gpu_s_trsm;
+
+extern long cpu_s_cblok_gemms;
+extern long cpu_s_blok_gemms;
+extern long cpu_s_trsm;
+
+
+
 static void (*sopalinFacto[5][4])(pastix_data_t *, sopalin_data_t*) =
 {
     { sopalin_spotrf, sopalin_dpotrf, sopalin_cpotrf, sopalin_zpotrf },
@@ -377,16 +411,6 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
         sopalin_data.cublas_handle = pastix_data->cublas_handle;
         sopalin_data.cublas_stat = pastix_data->cublas_stat;
         //cublasSetMathMode(*(pastix_data->cublas_handle), CUBLAS_TENSOR_OP_MATH);
-		cudaError_t cudaError;
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneA), 2*8192*8192);
-		if(cudaError != cudaSuccess)
-			printf("CudaMalloc for SwapZoneA failed\n");
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneB), 2*8192*8192);
-		if(cudaError != cudaSuccess)
-			printf("CudaMalloc for SwapZoneB failed\n");
-		cudaError = cudaMalloc(&(sopalin_data.swapZoneC), 2*8192*8192);
-		if(cudaError != cudaSuccess)
-			printf("CudaMalloc for SwapZoneC failed\n");
 
         /* TODO: might change the behavior: if the user wants a ratio of the norm, it could compute it himself */
         if ( pastix_data->dparm[ DPARM_EPSILON_MAGN_CTRL ] < 0. ) {
@@ -586,6 +610,13 @@ pastix_task_numfact( pastix_data_t *pastix_data,
             return rc;
         }
     }
+    
+    
+    
+    printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_s_cblok_gemms, gpu_s_cblok_gemms);
+    printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_s_blok_gemms, gpu_s_blok_gemms);
+    printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_s_trsm, gpu_s_trsm);
+
 
     return EXIT_SUCCESS;
 }

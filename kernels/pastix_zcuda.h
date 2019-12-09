@@ -54,7 +54,8 @@ void gpublok_zscalo( pastix_trans_t            trans,
                 const cuDoubleComplex *A,
                 const cuDoubleComplex *D,
                 cuDoubleComplex       *B,
-                cudaStream_t     stream );
+                cudaStream_t     stream,
+				cublasHandle_t *cublas_handle );
 
 void gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                         pastix_uplo_t uplo, pastix_trans_t trans,

@@ -22,6 +22,9 @@
 #include "pastix_zcores.h"
 #include "pastix_zlrcores.h"
 
+long cpu_z_blok_gemms = 0;
+long cpu_z_cblok_gemms = 0;
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 static pastix_complex64_t mzone = -1.0;
 static pastix_complex64_t zone  =  1.0;
@@ -1411,6 +1414,7 @@ cpucblk_zgemmsp(       pastix_coefside_t   sideA,
     }
 
     kernel_trace_stop( blok->inlast, ktype, m, n, k, flops, time );
+	cpu_z_cblok_gemms++;
 }
 
 /**
@@ -1520,4 +1524,5 @@ cpublok_zgemmsp(       pastix_coefside_t   sideA,
                                      A, B, C );
         }
     }
+	cpu_z_blok_gemms++;
 }

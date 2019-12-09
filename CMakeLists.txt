@@ -275,6 +275,9 @@ if( PASTIX_WITH_CUDA )
         set(CMAKE_REQUIRED_LIBRARIES "${saved_libs}")
 
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCUDA_SM_VERSION=70")
+        list(APPEND CUDA_NVCC_FLAGS " -arch=sm_50 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_52,code=sm_52 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_70,code=compute_70 ")
+
+
     else(CUDA_FOUND)
         message(FATAL_ERROR "CUDA is required but was not found. Please provide a CUDA library in your environment or configure with -DPASTIX_WITH_CUDA=OFF")
     endif (CUDA_FOUND)
@@ -646,6 +649,7 @@ set(SOURCES
   refinement/z_refine_bicgstab.c
   refinement/z_refine_functions.c
   refinement/z_refine_gmres.c
+  refinement/z_refine_gmres_gpu.c
   refinement/z_refine_grad.c
   refinement/z_refine_pivot.c
   )

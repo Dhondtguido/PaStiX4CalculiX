@@ -362,7 +362,7 @@ pastixInitParam( pastix_int_t *iparm,
     /* Refinement */
     iparm[IPARM_REFINEMENT]            = PastixRefineGMRES;
     iparm[IPARM_NBITER]                = 0;
-    iparm[IPARM_ITERMAX]               = 250;
+    iparm[IPARM_ITERMAX]               = 2500;
     iparm[IPARM_GMRES_IM]              = 25;
 
     /* Context */
@@ -372,7 +372,7 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 75;
     iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 32 * 1024;
 
     /* Compression */

@@ -427,6 +427,7 @@ BODY
                              PastixNoTrans, PastixNonUnit,
                              cblk, m, A, C, &lowrank );
 
+			printf("from here\n");
             cpublok_zscalo( PastixConjTrans, cblk, m, C, A, WS );
         }
     }

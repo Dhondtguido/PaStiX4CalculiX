@@ -23,6 +23,8 @@
 #include "bcsc_z.h"
 #include "sopalin_data.h"
 #include "z_refine_functions.h"
+#include "cpu_z_spmv.h"
+#include "gpu_z_spmv.h"
 
 /**
  *******************************************************************************
@@ -115,7 +117,8 @@ void z_refine_output_final( pastix_data_t      *pastix_data,
 void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
 {
     pastix_scheduler_t sched = pastix_data->iparm[IPARM_SCHEDULER];
-
+    int num_gpus = pastix_data->iparm[IPARM_GPU_NBR];
+    
     /* Allocations */
     solver->malloc  = &bvec_malloc;
     solver->free    = &bvec_free;
@@ -133,8 +136,20 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
 #else
 	solver->spsv = &bcsc_zspsv;
 #endif
-    if ( sched == PastixSchedSequential ) {
+
+	if ( num_gpus > 0){
+		solver->spmv = &bcsc_zspmv;
+		solver->unblocked_spmv = &gpu_z_spmv;
+        solver->copy = &bvec_zcopy_cuda;
+        solver->dot  = &bvec_zdotc_cuda;
+        solver->axpy = &bvec_zaxpy_cuda;
+        solver->scal = &bvec_zscal_cuda;
+        solver->norm = &bvec_znrm2_cuda;
+        solver->gemv = &bvec_zgemv_cuda;
+	}
+    else if ( sched == PastixSchedSequential ) {
         solver->spmv = &bcsc_zspmv;
+		solver->unblocked_spmv = &cpu_z_spmv;
         solver->copy = &bvec_zcopy_seq;
         solver->dot  = &bvec_zdotc_seq;
         solver->axpy = &bvec_zaxpy_seq;
@@ -143,6 +158,7 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
         solver->gemv = &bvec_zgemv_seq;
     } else {
         solver->spmv = &bcsc_zspmv;
+		solver->unblocked_spmv = &cpu_z_spmv;
         solver->copy = &bvec_zcopy_smp;
         solver->dot  = &bvec_zdotc_smp;
         solver->axpy = &bvec_zaxpy_smp;

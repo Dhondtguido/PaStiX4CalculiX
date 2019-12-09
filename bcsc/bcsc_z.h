@@ -49,6 +49,11 @@ void bvec_zaxpy_smp( pastix_data_t            *pastix_data,
                      pastix_complex64_t        alpha,
                      const pastix_complex64_t *x,
                      pastix_complex64_t       *y );
+void bvec_zaxpy_cuda( pastix_data_t            *pastix_data,
+                     pastix_int_t              n,
+                     cuDoubleComplex        alpha,
+                     const cuDoubleComplex *x,
+                     cuDoubleComplex       *y );
 
 void bvec_zcopy_seq( pastix_data_t            *pastix_data,
                      pastix_int_t              n,
@@ -58,26 +63,44 @@ void bvec_zcopy_smp( pastix_data_t            *pastix_data,
                      pastix_int_t              n,
                      const pastix_complex64_t *x,
                      pastix_complex64_t       *y );
+void bvec_zcopy_cuda( pastix_data_t            *pastix_data,
+                     pastix_int_t              n,
+                     const cuDoubleComplex *x,
+                     cuDoubleComplex       *y );
 
 #if defined(PRECISION_z) || defined(PRECISION_c)
-pastix_complex64_t bvec_zdotc_seq( pastix_data_t            *pastix_data,
+void bvec_zdotc_seq( pastix_data_t            *pastix_data,
                                    pastix_int_t              n,
                                    const pastix_complex64_t *x,
-                                   const pastix_complex64_t *y );
-pastix_complex64_t bvec_zdotc_smp( pastix_data_t            *pastix_data,
+                                   const pastix_complex64_t *y,
+                                         pastix_complex64_t *r  );
+void bvec_zdotc_smp( pastix_data_t            *pastix_data,
                                    pastix_int_t              n,
                                    const pastix_complex64_t *x,
-                                   const pastix_complex64_t *y );
+                                   const pastix_complex64_t *y,
+                                         pastix_complex64_t *r  );
+void bvec_zdotc_cuda( pastix_data_t            *pastix_data,
+                                   pastix_int_t              n,
+                                   const cuDoubleComplex *x,
+                                   const cuDoubleComplex *y,
+                                         cuDoubleComplex *r  );
 #endif
 
-pastix_complex64_t bvec_zdotu_seq( pastix_data_t            *pastix_data,
+void bvec_zdotu_seq( pastix_data_t            *pastix_data,
                                    pastix_int_t              n,
                                    const pastix_complex64_t *x,
-                                   const pastix_complex64_t *y );
-pastix_complex64_t bvec_zdotu_smp( pastix_data_t            *pastix_data,
+                                   const pastix_complex64_t *y,
+                                         pastix_complex64_t *r  );
+void bvec_zdotu_smp( pastix_data_t            *pastix_data,
                                    pastix_int_t              n,
                                    const pastix_complex64_t *x,
-                                   const pastix_complex64_t *y );
+                                   const pastix_complex64_t *y,
+                                         pastix_complex64_t *r  );
+void bvec_zdotu_cuda( pastix_data_t            *pastix_data,
+                                   pastix_int_t              n,
+                                   const cuDoubleComplex *x,
+                                   const cuDoubleComplex *y,
+                                         cuDoubleComplex *r  );
 
 void bvec_zgemv_seq( pastix_data_t            *pastix_data,
                      pastix_int_t              m,
@@ -97,6 +120,15 @@ void bvec_zgemv_smp( pastix_data_t            *pastix_data,
                      const pastix_complex64_t *x,
                      pastix_complex64_t        beta,
                      pastix_complex64_t       *y );
+void bvec_zgemv_cuda( pastix_data_t            *pastix_data,
+                     pastix_int_t              m,
+                     pastix_int_t              n,
+                     cuDoubleComplex        alpha,
+                     const cuDoubleComplex *A,
+                     pastix_int_t              lda,
+                     const cuDoubleComplex *x,
+                     cuDoubleComplex        beta,
+                     cuDoubleComplex       *y );
 
 double bvec_znrm2_seq( pastix_data_t            *pastix_data,
                        pastix_int_t              n,
@@ -104,6 +136,9 @@ double bvec_znrm2_seq( pastix_data_t            *pastix_data,
 double bvec_znrm2_smp( pastix_data_t            *pastix_data,
                        pastix_int_t              n,
                        const pastix_complex64_t *x );
+double bvec_znrm2_cuda( pastix_data_t            *pastix_data,
+                       pastix_int_t              n,
+                       const cuDoubleComplex *x );
 
 void bvec_zscal_seq( pastix_data_t      *pastix_data,
                      pastix_int_t        n,
@@ -113,6 +148,10 @@ void bvec_zscal_smp( pastix_data_t      *pastix_data,
                      pastix_int_t        n,
                      pastix_complex64_t  alpha,
                      pastix_complex64_t *x );
+void bvec_zscal_cuda( pastix_data_t      *pastix_data,
+                     pastix_int_t        n,
+                     cuDoubleComplex  alpha,
+                     cuDoubleComplex *x );
 
 int bvec_zlapmr( int thread_safe,
                  pastix_dir_t        dir,
@@ -139,7 +178,8 @@ void bcsc_zspmv( const pastix_data_t      *pastix_data,
                  pastix_complex64_t        alpha,
                  const pastix_complex64_t *x,
                  pastix_complex64_t        beta,
-                 pastix_complex64_t       *y );
+                 pastix_complex64_t       *y,
+				 cudaStream_t		        *streams  );
 
 void bcsc_zspmv_seq( const pastix_data_t      *pastix_data,
                      pastix_trans_t            trans,
@@ -153,6 +193,13 @@ void bcsc_zspmv_smp( const pastix_data_t      *pastix_data,
                      const pastix_complex64_t *x,
                      pastix_complex64_t        beta,
                      pastix_complex64_t       *y );
+void bcsc_zspmv_cuda( const pastix_data_t      *pastix_data,
+                     pastix_trans_t            trans,
+                     pastix_complex64_t        alpha,
+                     const pastix_complex64_t *x,
+                     pastix_complex64_t        beta,
+                     pastix_complex64_t       *y,
+				     cudaStream_t		        *streams );
 
 /**
  *    @}

@@ -43,7 +43,7 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
+pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
 {
     struct z_solver     solver; 
     Clock               refine_clk;
@@ -63,7 +63,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
     pastix_int_t        i, j,  ldw, iters;
     int                 outflag, inflag;
     int                 savemem = 0;
-    int                 precond = 1;
+    int                 precond = 0;
 
     memset( &solver, 0, sizeof(struct z_solver) );
     z_refine_init( &solver, pastix_data );
@@ -141,8 +141,10 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
 
         /* Compute r0 = b - A * x */
         solver.copy( pastix_data, n, b, gmVi );
+
         if ( normx > 0. ) {
-            solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi );
+            solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
+            //solver.unblocked_spmv( n, -1., 1., spm->valuesDouble, x, gmVi, spm->colptr, spm->rowptr, NULL );
         }
 
         /* Compute resid = ||r0||_f */
@@ -182,19 +184,21 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
             solver.copy( pastix_data, n, gmVi, gmWi );
 
             /* Compute w_{i} = M^{-1} v_{i} */
+            
             if ( precond ) {
                 solver.spsv( pastix_data, gmWi );
             }
 
             /* v_{i+1} = A (M^{-1} v_{i}) = A w_{i} */
-            gmVi += n;
-            solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi );
+            gmVi += n;            
+            solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
+            //solver.unblocked_spmv( n, 1.0, 0., spm->valuesDouble, gmWi, gmVi, spm->colptr, spm->rowptr, NULL);
 
             /* Classical Gram-Schmidt */
             for (j=0; j<=i; j++)
             {
                 /* Compute h_{j,i} = < v_{i+1}, v_{j} > */
-                gmHi[j] = solver.dot( pastix_data, n, gmVi, gmV + j * n );
+                solver.dot( pastix_data, n, gmVi, gmV + j * n, gmHi + j );
 
                 /* Compute v_{i+1} = v_{i+1} - h_{j,i} v_{j} */
                 solver.axpy( pastix_data, n, -1. * gmHi[j],  gmV + j * n, gmVi );
@@ -202,6 +206,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
 
             /* Compute || v_{i+1} ||_f */
             norm = solver.norm( pastix_data, n, gmVi );
+            
             gmHi[i+1] = norm;
 
             /* Compute v_{i+1} = v_{i+1} / h_{i+1,i} iff h_{i+1,i} is not too small */
@@ -281,7 +286,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
                     solver.gemv( pastix_data, n, i+1, 1.0, (precond ? gmW : gmV), n, dbg_G, 1.0, dbg_x );
 
                     /* Compute b - Ax */
-                    solver.spmv( pastix_data, PastixNoTrans, -1., dbg_x, 1., dbg_r );
+                    solver.unblocked_spmv( pastix_data, PastixNoTrans, -1., dbg_x, 1., dbg_r, NULL );
 
                     normr2 = solver.norm( pastix_data, n, dbg_r );
                     fprintf(stdout, OUT_ITERREFINE_ERR, normr2 / normb );

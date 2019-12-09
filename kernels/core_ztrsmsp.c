@@ -22,6 +22,8 @@
 #include "pastix_zcores.h"
 #include "pastix_zlrcores.h"
 
+long cpu_z_trsm = 0;
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 static pastix_complex64_t zone =  1.0;
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -698,4 +700,6 @@ cpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t uplo,
         core_ztrsmsp_2dsub( side, uplo, trans, diag,
                             cblk, blok_m, A, C );
     }
+    cpu_z_trsm++;
 }
+

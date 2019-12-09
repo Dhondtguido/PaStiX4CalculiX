@@ -36,8 +36,15 @@
  * and the precision
  *
  *******************************************************************************/
-static pastix_int_t (*sopalinRefine[4][4])(pastix_data_t *pastix_data, void *x, void *b) =
+static pastix_int_t (*sopalinRefine[5][4])(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm) =
 {
+    //  PastixRefineGMRES_GPU
+    {
+        s_gmres_gpu_smp,
+        d_gmres_gpu_smp,
+        c_gmres_gpu_smp,
+        z_gmres_gpu_smp
+    },
     //  PastixRefineGMRES
     {
         s_gmres_smp,
@@ -118,7 +125,8 @@ int
 pastix_subtask_refine( pastix_data_t *pastix_data,
                        pastix_int_t n, pastix_int_t nrhs,
                              void **b, pastix_int_t ldb,
-                             void **x, pastix_int_t ldx )
+                             void **x, pastix_int_t ldx,
+					   spmatrix_t* spm )
 {
     pastix_int_t   *iparm = pastix_data->iparm;
     pastix_bcsc_t  *bcsc  = pastix_data->bcsc;
@@ -153,7 +161,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
     clockStart(timer);
     {
 		
-        if(iparm[66] == 2){
+       if(iparm[66] == 2){
 			
 			double *xptrD = (double*) malloc(sizeof(double) * n);
 			double *bptrD = (double*) malloc(sizeof(double) * n);
@@ -197,8 +205,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 					U_new[i] = (double) U_old[i];
 				}
 				free(U_old);
-			}
-			/*
+			}/*
+			
 			SolverCblk* cblktab = pastix_data->solvmatr->cblktab;
 			int numCblks = pastix_data->solvmatr->cblknbr;
 			
@@ -236,7 +244,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 
     clockStart(timer);
     {
-        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
+        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *, spmatrix_t *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
         
         size_t shiftx, shiftb;
         int i;
@@ -246,7 +254,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 
         for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
             pastix_int_t it;
-            it = refinefct( pastix_data, xptr, bptr );
+            it = refinefct( pastix_data, xptr, bptr, spm);
             pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
         }
 	}
@@ -258,8 +266,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
                       pastix_data->dparm[DPARM_REFINE_TIME] );
     }
     
-    bcsc->flttype = PastixDouble;
 
+    bcsc->flttype = PastixDouble;
     (void)n;
     return PASTIX_SUCCESS;
 }
@@ -317,7 +325,8 @@ int
 pastix_task_refine( pastix_data_t *pastix_data,
                     pastix_int_t n, pastix_int_t nrhs,
                     void **b, pastix_int_t ldb,
-                    void **x, pastix_int_t ldx )
+                    void **x, pastix_int_t ldx,
+                    spmatrix_t* spm )
 {
     pastix_int_t  *iparm = pastix_data->iparm;
     pastix_bcsc_t *bcsc  = pastix_data->bcsc;
@@ -355,7 +364,7 @@ pastix_task_refine( pastix_data_t *pastix_data,
     }
 
     /* Performe the iterative refinement */
-    rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx );
+    rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx, spm );
     if( rc != PASTIX_SUCCESS ) {
         return rc;
     }

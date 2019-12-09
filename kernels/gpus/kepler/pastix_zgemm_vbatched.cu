@@ -198,7 +198,7 @@ pastix_zgemm_vbatched_nt(
         }
     }
 }
-
+/*
 void __global__ pastix_zscalo_kernel(
 			 pastix_int_t              M,
 			 pastix_int_t              N,
@@ -213,20 +213,13 @@ void __global__ pastix_zscalo_kernel(
 
 #else
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
-	int row = x % M;
-	int col = x / M;
+	int stride = ((M+15)/16);
+	int row = x % stride;
+	int col = x / stride;
 	if(col < N){
-		if((row == 20 && col == 30) || (row == 20 && col == 30)){
-			printf("GPU\n");
-			printf("B[%d] = A[%d] * D[%d];\n", row+col*ldb, row+col*lda, col*ldd);
-			printf("%f = %f * %f;\n", B[row+col*ldb], A[row+col*lda], D[col*ldd]);
-			B[row+col*ldb] = A[row+col*lda] * D[col*ldd];
-			printf("%f = %f * %f;\n", B[row+col*ldb], A[row+col*lda], D[col*ldd]);
-		}
-		else
-		{
-			B[row+col*ldb] = A[row+col*lda] * D[col*ldd];
-		}
+		#pragma unroll
+		for(int i = 0; row+i < M; i+=stride)
+			B[i+row+col*ldb] = A[i+row+col*lda] * D[col*ldd];
 	}
 #endif
 }
@@ -242,6 +235,89 @@ void pastix_zscalo(
              pastix_int_t              ldb,
              cudaStream_t     stream )
 {
-	pastix_zscalo_kernel<<<(M*N+1023)/1024,1024,0,stream>>>(M, N, A, lda, D, ldd, B, ldb);
+	pastix_zscalo_kernel<<<(((M+15)/16)*N+1023)/1024,1024,0,stream>>>(M, N, A, lda, D, ldd, B, ldb);
+}*/
+
+__global__ void 
+pastix_zspmvp_kernel( 
+    pastix_int_t num_rows, 
+    pastix_complex64_t alpha, 
+    const pastix_complex64_t * dval, 
+    pastix_int_t * drowptr, 
+    pastix_int_t * dcolind,
+    const pastix_complex64_t * dx,
+    pastix_complex64_t beta, 
+    pastix_complex64_t * dy)
+{
+    int row = blockIdx.x*blockDim.x+threadIdx.x;
+    int j;
+
+    if(row<num_rows){
+		
+        pastix_complex64_t dot = 0.0;
+        
+        int start = drowptr[ row ];
+        int end = drowptr[ row+1 ];
+        for( j=start; j<end; j++){/*
+			if(row == 0){
+	printf("\n\n");
+				printf("dot += dval[ %d ] * dc[ dcolind[ %d ] ]\n", j, j);
+				printf("dot += dval[ %d ] * dc[ %ld ]\n", j, dcolind[j]);
+				printf("%lf += %lf * %lf\n", dot, dval[ j ], dx[ dcolind[j] ]);
+	printf("\n\n");
+			}*/
+           dot += dval[ j ] * dx[ dcolind[j] ];
+            
+		}
+		
+        dy[ row ] = alpha * dot + beta * dy[ row ];
+        
+        //dy[ row ] =  dot *alpha + beta * dy[ row ];
+        /*if(row == 0){
+			printf("dot * alpha + beta * dy[row]\n");
+			printf("%lf * %lf + %lf * %lf\n", dot , alpha ,beta , dy[row]);
+		}*/
+    }
+}
+
+void 
+pastix_zspmv(
+    pastix_int_t m,
+    pastix_complex64_t alpha,
+    const pastix_complex64_t* dval,
+    pastix_int_t* drowptr,
+    pastix_int_t* dcolind,
+    const pastix_complex64_t* dx,
+    pastix_complex64_t beta,
+    pastix_complex64_t* dy,
+	cudaStream_t		       stream )
+{
+	/*printf("here\n");
+	pastix_int_t int_buffer;
+	pastix_complex64_t buffer;
+	cudaMemcpy(&buffer, dy, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("y[0] = %lf\n", buffer);
+	cudaMemcpy(&buffer, dval, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("A[0] = %lf\n", buffer);
+	cudaMemcpy(&int_buffer, drowptr+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("drowptr[10] = %d\n", int_buffer);
+	cudaMemcpy(&int_buffer, dcolind+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("dcolind[10] = %d\n", int_buffer);*/
+    pastix_zspmvp_kernel<<< (m + 256 - 1) / 256, 256, 0, stream >>>
+							(m, alpha, dval, drowptr, dcolind, dx, beta, dy);
+   /* pastix_zspmvp_kernel<<< (m + 256 - 1) / 256, 256 >>>
+							(m, alpha, dval, drowptr, dcolind, dx, beta, dy);*/
+							/*
+	cudaMemcpy(&buffer, dy, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);	
+	printf("y[0] = %lf\n", buffer);
+	cudaMemcpy(&buffer, dval, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("A[0] = %lf\n", buffer);
+	cudaMemcpy(&int_buffer, drowptr+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("drowptr[10] = %d\n", int_buffer);
+	cudaMemcpy(&int_buffer, dcolind+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+	printf("dcolind[10] = %d\n", int_buffer);
+	cudaDeviceSynchronize();
+	exit(0);*/
+	
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
