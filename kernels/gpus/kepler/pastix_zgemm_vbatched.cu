@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include "pastix.h"
-#include "pastix/datatypes.h"
 #include "kernels/pastix_cuda.h"
 //#include "kernels/pastix_zcores.h"
 
@@ -239,13 +238,13 @@ void pastix_zscalo(
 }*/
 
 __global__ void 
-pastix_zspmvp_kernel( 
+pastix_z_spmvp_kernel_one_base( 
     pastix_int_t num_rows, 
     pastix_complex64_t alpha, 
     const pastix_complex64_t * dval, 
     pastix_int_t * drowptr, 
     pastix_int_t * dcolind,
-    const pastix_complex64_t * dx,
+    const pastix_complex64_t * dx, 
     pastix_complex64_t beta, 
     pastix_complex64_t * dy)
 {
@@ -253,35 +252,45 @@ pastix_zspmvp_kernel(
     int j;
 
     if(row<num_rows){
-		
         pastix_complex64_t dot = 0.0;
         
-        int start = drowptr[ row ];
-        int end = drowptr[ row+1 ];
-        for( j=start; j<end; j++){/*
-			if(row == 0){
-	printf("\n\n");
-				printf("dot += dval[ %d ] * dc[ dcolind[ %d ] ]\n", j, j);
-				printf("dot += dval[ %d ] * dc[ %ld ]\n", j, dcolind[j]);
-				printf("%lf += %lf * %lf\n", dot, dval[ j ], dx[ dcolind[j] ]);
-	printf("\n\n");
-			}*/
-           dot += dval[ j ] * dx[ dcolind[j] ];
-            
+        #pragma unroll
+        for( j = drowptr[ row ] - 1; j < drowptr[ row + 1 ] - 1; j++){
+           dot += dval[ j ] * dx[ dcolind[ j ] - 1 ];
 		}
 		
-        dy[ row ] = alpha * dot + beta * dy[ row ];
+        dy[ row ] =  alpha * dot + beta * dy[ row ];
+    }
+}
+
+__global__ void 
+pastix_z_spmvp_kernel( 
+    pastix_int_t num_rows, 
+    pastix_complex64_t alpha, 
+    const pastix_complex64_t * dval, 
+    pastix_int_t * drowptr, 
+    pastix_int_t * dcolind,
+    const pastix_complex64_t * dx, 
+    pastix_complex64_t beta, 
+    pastix_complex64_t * dy)
+{
+    int row = blockIdx.x*blockDim.x+threadIdx.x;
+    int j;
+
+    if(row<num_rows){
+        pastix_complex64_t dot = 0.0;
         
-        //dy[ row ] =  dot *alpha + beta * dy[ row ];
-        /*if(row == 0){
-			printf("dot * alpha + beta * dy[row]\n");
-			printf("%lf * %lf + %lf * %lf\n", dot , alpha ,beta , dy[row]);
-		}*/
+        #pragma unroll
+        for( j = drowptr[ row ]; j < drowptr[ row + 1 ]; j++){
+           dot += dval[ j ] * dx[ dcolind[ j ]];
+		}
+		
+        dy[ row ] =  alpha * dot + beta * dy[ row ];
     }
 }
 
 void 
-pastix_zspmv(
+pastix_z_spmv(
     pastix_int_t m,
     pastix_complex64_t alpha,
     const pastix_complex64_t* dval,
@@ -292,32 +301,67 @@ pastix_zspmv(
     pastix_complex64_t* dy,
 	cudaStream_t		       stream )
 {
-	/*printf("here\n");
-	pastix_int_t int_buffer;
-	pastix_complex64_t buffer;
-	cudaMemcpy(&buffer, dy, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("y[0] = %lf\n", buffer);
-	cudaMemcpy(&buffer, dval, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("A[0] = %lf\n", buffer);
-	cudaMemcpy(&int_buffer, drowptr+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("drowptr[10] = %d\n", int_buffer);
-	cudaMemcpy(&int_buffer, dcolind+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("dcolind[10] = %d\n", int_buffer);*/
-    pastix_zspmvp_kernel<<< (m + 256 - 1) / 256, 256, 0, stream >>>
+    pastix_z_spmvp_kernel<<< (m + 256 - 1) / 256, 256, 0, stream >>>
 							(m, alpha, dval, drowptr, dcolind, dx, beta, dy);
-   /* pastix_zspmvp_kernel<<< (m + 256 - 1) / 256, 256 >>>
-							(m, alpha, dval, drowptr, dcolind, dx, beta, dy);*/
-							/*
-	cudaMemcpy(&buffer, dy, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);	
-	printf("y[0] = %lf\n", buffer);
-	cudaMemcpy(&buffer, dval, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("A[0] = %lf\n", buffer);
-	cudaMemcpy(&int_buffer, drowptr+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("drowptr[10] = %d\n", int_buffer);
-	cudaMemcpy(&int_buffer, dcolind+10, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-	printf("dcolind[10] = %d\n", int_buffer);
-	cudaDeviceSynchronize();
-	exit(0);*/
-	
 }
+
+void 
+pastix_z_spmv_one_base(
+    pastix_int_t m,
+    pastix_complex64_t alpha,
+    const pastix_complex64_t* dval,
+    pastix_int_t* drowptr,
+    pastix_int_t* dcolind,
+    const pastix_complex64_t* dx,
+    pastix_complex64_t beta,
+    pastix_complex64_t* dy )
+{
+	pastix_z_spmvp_kernel_one_base<<< (m + 256 - 1) / 256, 256>>>
+							(m, alpha, dval, drowptr, dcolind, dx, beta, dy);
+}
+
+
+__global__ void 
+pastix_z_spmvp_kernel_perm( 
+    pastix_int_t num_rows, 
+    pastix_complex64_t alpha, 
+    const pastix_complex64_t * dval, 
+    pastix_int_t * drowptr, 
+    pastix_int_t * dcolind,
+    const pastix_complex64_t * dx, 
+    pastix_complex64_t beta, 
+    pastix_complex64_t * dy,
+    pastix_int_t* perm)
+{
+    int row = blockIdx.x*blockDim.x+threadIdx.x;
+    int j;
+
+    if(row<num_rows){
+        pastix_complex64_t dot = 0.0;
+        
+        #pragma unroll
+        for( j = drowptr[ row ] - 1; j < drowptr[ row + 1 ] - 1; j++){
+           dot += dval[ j ] * dx[ perm[dcolind[ j ] - 1] ];
+		}
+		
+        dy[ perm[row] ] =  alpha * dot + beta * dy[ perm[row] ];
+    }
+}
+
+void 
+pastix_z_spmv_perm(
+    pastix_int_t m,
+    pastix_complex64_t alpha,
+    const pastix_complex64_t* dval,
+    pastix_int_t* drowptr,
+    pastix_int_t* dcolind,
+    const pastix_complex64_t* dx,
+    pastix_complex64_t beta,
+    pastix_complex64_t* dy,
+    pastix_int_t* perm)
+{
+	pastix_z_spmvp_kernel_perm<<< (m + 256 - 1) / 256, 256>>>
+							(m, alpha, dval, drowptr, dcolind, dx, beta, dy, perm);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////

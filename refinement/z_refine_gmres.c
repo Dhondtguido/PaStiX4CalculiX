@@ -141,10 +141,20 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
 
         /* Compute r0 = b - A * x */
         solver.copy( pastix_data, n, b, gmVi );
-
         if ( normx > 0. ) {
-            solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
-            //solver.unblocked_spmv( n, -1., 1., spm->valuesDouble, x, gmVi, spm->colptr, spm->rowptr, NULL );
+            //solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
+            if(precond){
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, x, n );
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmVi, n );
+			}
+                                    
+            //solver.unblocked_spmv( n, -1., 1., spm->valuesDouble, x, gmVi, spm->colptr, spm->rowptr );
+             solver.spmv( pastix_data, PastixNoTrans, -1.0, x, 1.0, gmVi, NULL );
+                        
+            if(precond){
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, x, n );
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmVi, n );
+			}
         }
 
         /* Compute resid = ||r0||_f */
@@ -184,15 +194,26 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
             solver.copy( pastix_data, n, gmVi, gmWi );
 
             /* Compute w_{i} = M^{-1} v_{i} */
-            
             if ( precond ) {
                 solver.spsv( pastix_data, gmWi );
             }
 
             /* v_{i+1} = A (M^{-1} v_{i}) = A w_{i} */
-            gmVi += n;            
+            gmVi += n;
+            
+            if(precond){
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmWi, n );
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmVi, n );
+			}
+                                    
+            //solver.unblocked_spmv( n, 1.0, 0., spm->valuesDouble, gmWi, gmVi, spm->colptr, spm->rowptr);
             solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
-            //solver.unblocked_spmv( n, 1.0, 0., spm->valuesDouble, gmWi, gmVi, spm->colptr, spm->rowptr, NULL);
+
+			if(precond){
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmWi, n );
+				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmVi, n );
+			}
+            
 
             /* Classical Gram-Schmidt */
             for (j=0; j<=i; j++)
@@ -206,7 +227,6 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
 
             /* Compute || v_{i+1} ||_f */
             norm = solver.norm( pastix_data, n, gmVi );
-            
             gmHi[i+1] = norm;
 
             /* Compute v_{i+1} = v_{i+1} / h_{i+1,i} iff h_{i+1,i} is not too small */
@@ -286,7 +306,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
                     solver.gemv( pastix_data, n, i+1, 1.0, (precond ? gmW : gmV), n, dbg_G, 1.0, dbg_x );
 
                     /* Compute b - Ax */
-                    solver.unblocked_spmv( pastix_data, PastixNoTrans, -1., dbg_x, 1., dbg_r, NULL );
+                    solver.spmv( pastix_data, PastixNoTrans, -1., dbg_x, 1., dbg_r );
 
                     normr2 = solver.norm( pastix_data, n, dbg_r );
                     fprintf(stdout, OUT_ITERREFINE_ERR, normr2 / normb );

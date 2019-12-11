@@ -113,7 +113,49 @@ pastix_fermi_sgemmsp(
     int blocknbr, const int *blocktab, int fblocknbr, const int *fblocktab,
     cudaStream_t stream );
     
-void pastix_zspmv(
+    
+                        
+void pastix_z_spmv_one_base(
+			pastix_int_t m,
+			pastix_complex64_t alpha,
+			const pastix_complex64_t* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const pastix_complex64_t* dx,
+			pastix_complex64_t beta,
+			pastix_complex64_t* dy );
+                        
+void pastix_c_spmv_one_base(
+			pastix_int_t m,
+			pastix_complex32_t alpha,
+			const pastix_complex32_t* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const pastix_complex32_t* dx,
+			pastix_complex32_t beta,
+			pastix_complex32_t* dy );
+                        
+void pastix_d_spmv_one_base(
+			pastix_int_t m,
+			double alpha,
+			const double* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const double* dx,
+			double beta,
+			double* dy);
+                        
+void pastix_s_spmv_one_base(
+			pastix_int_t m,
+			float alpha,
+			const float* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const float* dx,
+			float beta,
+			float* dy);
+                        
+void pastix_z_spmv(
 			pastix_int_t m,
 			pastix_complex64_t alpha,
 			const pastix_complex64_t* dval,
@@ -123,8 +165,8 @@ void pastix_zspmv(
 			pastix_complex64_t beta,
 			pastix_complex64_t* dy,
 			cudaStream_t stream );
-			
-void pastix_cspmv(
+                        
+void pastix_c_spmv(
 			pastix_int_t m,
 			pastix_complex32_t alpha,
 			const pastix_complex32_t* dval,
@@ -134,8 +176,8 @@ void pastix_cspmv(
 			pastix_complex32_t beta,
 			pastix_complex32_t* dy,
 			cudaStream_t stream );
-			
-void pastix_dspmv(
+                        
+void pastix_d_spmv(
 			pastix_int_t m,
 			double alpha,
 			const double* dval,
@@ -145,8 +187,8 @@ void pastix_dspmv(
 			double beta,
 			double* dy,
 			cudaStream_t stream );
-			
-void pastix_sspmv(
+                        
+void pastix_s_spmv(
 			pastix_int_t m,
 			float alpha,
 			const float* dval,
@@ -156,6 +198,51 @@ void pastix_sspmv(
 			float beta,
 			float* dy,
 			cudaStream_t stream );
+    
+void pastix_z_spmv_perm(
+			pastix_int_t m,
+			pastix_complex64_t alpha,
+			const pastix_complex64_t* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const pastix_complex64_t* dx,
+			pastix_complex64_t beta,
+			pastix_complex64_t* dy,
+			pastix_int_t* perm );
+    
+void pastix_c_spmv_perm(
+			pastix_int_t m,
+			pastix_complex32_t alpha,
+			const pastix_complex32_t* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const pastix_complex32_t* dx,
+			pastix_complex32_t beta,
+			pastix_complex32_t* dy,
+			pastix_int_t* perm);
+    
+void pastix_d_spmv_perm(
+			pastix_int_t m,
+			double alpha,
+			const double* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const double* dx,
+			double beta,
+			double* dy,
+			pastix_int_t* perm );
+    
+void pastix_s_spmv_perm(
+			pastix_int_t m,
+			float alpha,
+			const float* dval,
+			pastix_int_t* drowptr,
+			pastix_int_t* dcolind,
+			const float* dx,
+			float beta,
+			float* dy,
+			pastix_int_t* perm);
+			
 
 #ifdef __cplusplus
 }

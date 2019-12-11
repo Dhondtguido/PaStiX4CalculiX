@@ -19,6 +19,8 @@
 
 #if defined(PASTIX_WITH_CUDA)
 
+#include "blend/solver.h"
+#include "pastix_lowrank.h"
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuComplex.h>

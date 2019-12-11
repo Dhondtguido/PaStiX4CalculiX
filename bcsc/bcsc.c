@@ -81,6 +81,7 @@ bcsc_init_coltab( const SolverMatrix  *solvmtx,
         {
             nodeidx = ( fcolnum + (iter-iter%dof) ) / dof;
 
+				
             colsize = (newcoltab[nodeidx+1] - newcoltab[nodeidx]) * dof;
             blockcol->coltab[iter+1] = blockcol->coltab[iter] + colsize;
         }

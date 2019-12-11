@@ -180,7 +180,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			
 			xptr = (char*) xptrD;
 			bptr = (char*) bptrD;
-			
+			/*
 			int numElements = bcsc->numElements;
 			
 			double* L_new = (double*) malloc(sizeof(double) * numElements);
@@ -205,7 +205,9 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 					U_new[i] = (double) U_old[i];
 				}
 				free(U_old);
-			}/*
+			}
+			*/
+			/*
 			
 			SolverCblk* cblktab = pastix_data->solvmatr->cblktab;
 			int numCblks = pastix_data->solvmatr->cblknbr;

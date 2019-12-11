@@ -275,7 +275,7 @@ if( PASTIX_WITH_CUDA )
         set(CMAKE_REQUIRED_LIBRARIES "${saved_libs}")
 
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DCUDA_SM_VERSION=70")
-        list(APPEND CUDA_NVCC_FLAGS " -arch=sm_50 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_52,code=sm_52 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_70,code=compute_70 ")
+        list(APPEND CUDA_NVCC_FLAGS " --cudart static -O3 -arch=sm_50 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_52,code=sm_52 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_70,code=compute_70 ")
 
 
     else(CUDA_FOUND)

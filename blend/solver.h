@@ -25,7 +25,9 @@ typedef struct blendctrl_s BlendCtrl;
 struct simuctrl_s;
 typedef struct simuctrl_s SimuCtrl;
 
+#include "common.h"
 #include "pastix_lowrank.h"
+#include "symbol/symbol.h"
 
 /**
  * @name Cblk properties
