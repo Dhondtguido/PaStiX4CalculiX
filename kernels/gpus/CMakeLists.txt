@@ -10,6 +10,7 @@
 ###
 include(RulesPrecisions)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/LightSpMV-1.0)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/kepler)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/kepler/gemm_config)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/fermi)
@@ -22,12 +23,22 @@ set(generated_headers "")
 ### Generate .c files from .jdf for all required precisions
 set(SOURCES
   kepler/pastix_zgemm_vbatched.cu
-  fermi/sparse_zgemm_fermi.cu
+#  fermi/sparse_zgemm_fermi.cu
 )
 
 precisions_rules_py(cuda_generated_files
   "${SOURCES}"
   PRECISIONS "s;d;c;z")
+  
+set(LIGHTSPMV
+  LightSpMV-1.0/src/cLightSpMV.cu
+  LightSpMV-1.0/src/Options.cu
+  LightSpMV-1.0/src/SpMV.cu
+  LightSpMV-1.0/src/SpMVCSR.cu
+)
+
+set(cuda_generated_files ${cuda_generated_files} ${LIGHTSPMV})
+  
 
 # Change the paths if in binary dir
 foreach( _cudafile ${cuda_generated_files} )

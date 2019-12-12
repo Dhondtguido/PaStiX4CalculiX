@@ -28,7 +28,7 @@ gpu_z_spmv(		pastix_int_t n,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind ){
-	printf("GPU ZSPMV\n");
+					
 	pastix_z_spmv_one_base(n, alpha, A, rowptr, colind, x, beta, y );
 }
 
@@ -43,6 +43,6 @@ gpu_z_spmv_perm(pastix_int_t n,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind,
                 pastix_int_t* perm ){
-	printf("GPU ZSPMV PERM\n");
+					
 	pastix_z_spmv_perm(n, alpha, A, rowptr, colind, x, beta, y, perm);
 }

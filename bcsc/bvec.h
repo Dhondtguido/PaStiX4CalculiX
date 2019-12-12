@@ -22,7 +22,11 @@
 
 void *bvec_malloc( size_t size );
 
+void *bvec_malloc_cuda( size_t size );
+
 void  bvec_free( void *x );
+
+void  bvec_free_cuda( void *x );
 
 #endif /* _bvec_h_ */
 /**

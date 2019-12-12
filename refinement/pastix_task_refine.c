@@ -26,6 +26,8 @@
 #include <blend/solver.h>
 #include <spm.h>
 #include <bcsc/bcsc.h>
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 
 /**
  *******************************************************************************
@@ -157,7 +159,6 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
     
     void *xptr = (char *)(*x);
 	void *bptr = (char *)(*b);
-		
     clockStart(timer);
     {
 		
@@ -180,33 +181,86 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			
 			xptr = (char*) xptrD;
 			bptr = (char*) bptrD;
-			/*
-			int numElements = bcsc->numElements;
 			
-			double* L_new = (double*) malloc(sizeof(double) * numElements);
-			float* L_old = (float*) bcsc->Lvalues;			
-			bcsc->Lvalues = L_new;
-			#pragma omp simd
-			for(int i = 0; i < numElements; i++){
-				L_new[i] = (double) L_old[i];
-			}
-			free(L_old);
 			
-			float* U_old = (float*) bcsc->Uvalues;
-			
-			if(bcsc->mtxtype != SpmGeneral){
-				bcsc->Uvalues = bcsc->Lvalues;
-			}
-			else if(bcsc->Uvalues){
-				double* U_new = (double*) malloc(sizeof(double) * numElements);
-				bcsc->Uvalues = U_new;
+			if ( iparm[IPARM_GPU_NBR] <= 0 ) {
+				int numElements = bcsc->numElements;
+				
+				double* L_new = (double*) malloc(sizeof(double) * numElements);
+				float* L_old = (float*) bcsc->Lvalues;			
+				bcsc->Lvalues = L_new;
 				#pragma omp simd
 				for(int i = 0; i < numElements; i++){
-					U_new[i] = (double) U_old[i];
+					L_new[i] = (double) L_old[i];
 				}
-				free(U_old);
+				free(L_old);
+				
+				float* U_old = (float*) bcsc->Uvalues;
+				
+				if(bcsc->mtxtype != SpmGeneral){
+					bcsc->Uvalues = bcsc->Lvalues;
+				}
+				else if(bcsc->Uvalues){
+					double* U_new = (double*) malloc(sizeof(double) * numElements);
+					bcsc->Uvalues = U_new;
+					#pragma omp simd
+					for(int i = 0; i < numElements; i++){
+						U_new[i] = (double) U_old[i];
+					}
+					free(U_old);
+				}
 			}
-			*/
+			else{
+				void* ValuesGPU;
+				cudaMalloc((void**) &ValuesGPU, spm->nnzexp * sizeof(double));
+				cudaMemcpy(ValuesGPU, spm->valuesDouble, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice);
+				free(spm->valuesDouble);
+				spm->valuesDouble = ValuesGPU;
+				
+				pastix_int_t* colptrGPU;
+				cudaMalloc((void**) &colptrGPU, (spm->n+1) * sizeof(pastix_int_t));
+				cudaMemcpy(colptrGPU, spm->colptr, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+				free(spm->colptr);
+				spm->colptr = colptrGPU;
+				
+				pastix_int_t* rowptrGPU;
+				cudaMalloc((void**) &rowptrGPU, spm->nnzexp * sizeof(pastix_int_t));
+				cudaMemcpy(rowptrGPU, spm->rowptr, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+				free(spm->rowptr);
+				spm->rowptr = rowptrGPU;
+				
+				pastix_int_t* permGPU;
+				cudaMalloc((void**) &permGPU, spm->n * sizeof(pastix_int_t));
+				cudaMemcpy(permGPU, pastix_data->ordemesh->permtab, spm->n * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+				free(pastix_data->ordemesh->permtab);
+				pastix_data->ordemesh->permtab = permGPU;
+			}
+			/*void* ValuesGPU;
+			pastix_int_t* rowtabGPU;
+			
+			cudaMalloc((void**) &ValuesGPU, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t));
+			if(pastix_data->bcsc->mtxtype == PastixGeneral && pastix_data->bcsc->Uvalues != NULL)
+			{
+				cudaMemcpy(ValuesGPU, pastix_data->bcsc->Uvalues, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+				pastix_data->bcsc->Uvalues = ValuesGPU;
+			}
+			else
+			{
+				cudaMemcpy(ValuesGPU, pastix_data->bcsc->Lvalues, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+				pastix_data->bcsc->Lvalues = ValuesGPU;
+			}
+			
+			cudaMalloc((void**) &rowtabGPU, pastix_data->bcsc->numElements * sizeof(pastix_int_t));
+			cudaMemcpy(rowtabGPU, pastix_data->bcsc->rowtab, pastix_data->bcsc->numElements * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+			pastix_data->bcsc->rowtab = rowtabGPU;
+			
+			for(int i = 0; i < pastix_data->bcsc->cscfnbr; i++){
+				bcsc_cblk_t* cblk = (pastix_data->bcsc->cscftab)+i;
+				pastix_int_t* coltabGPU;
+				cudaMalloc((void**) &coltabGPU, (cblk->colnbr + 1) * sizeof(pastix_int_t));
+				cudaMemcpy(coltabGPU, cblk->coltab, (cblk->colnbr + 1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+				cblk->coltab = coltabGPU;
+			}*/
 			/*
 			
 			SolverCblk* cblktab = pastix_data->solvmatr->cblktab;
@@ -268,8 +322,19 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
                       pastix_data->dparm[DPARM_REFINE_TIME] );
     }
     
-
-    bcsc->flttype = PastixDouble;
+    if ( iparm[IPARM_GPU_NBR] > 0 ) {
+		cudaFree(spm->valuesDouble);
+		spm->valuesDouble = NULL;
+		cudaFree(spm->colptr);
+		spm->colptr = NULL;
+		cudaFree(spm->rowptr);
+		spm->rowptr = NULL;
+		cudaFree(pastix_data->ordemesh->permtab);
+		pastix_data->ordemesh->permtab = NULL;
+	}
+	
+	bcsc->flttype = PastixDouble;
+	
     (void)n;
     return PASTIX_SUCCESS;
 }

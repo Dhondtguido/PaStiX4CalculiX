@@ -30,7 +30,7 @@ static char diagstr[2] = { CUBLAS_DIAG_NON_UNIT, CUBLAS_DIAG_UNIT };
 long gpu_z_cblok_gemms = 0;
 long gpu_z_blok_gemms = 0;
 long gpu_z_trsm = 0;
-
+/*
 void
 gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                    pastix_uplo_t uplo, pastix_trans_t trans,
@@ -80,7 +80,7 @@ gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                           fblocknbr, blocktab + 2 * (fcblk->fblokptr - solvmatr->bloktab),
                           stream );
 }
-
+*/
 /**
  *******************************************************************************
  *

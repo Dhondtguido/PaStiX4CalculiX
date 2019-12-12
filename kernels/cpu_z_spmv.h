@@ -28,8 +28,7 @@ cpu_z_spmv(		pastix_int_t n,
 		  const pastix_complex64_t *x,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
-				pastix_int_t* colind,
-				cudaStream_t* streams);
+				pastix_int_t* colind);
 
 
 void
@@ -41,5 +40,4 @@ cpu_z_spmv_perm(		pastix_int_t n,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind,
-				pastix_int_t* perm,
-				cudaStream_t* streams);
+				pastix_int_t* perm);

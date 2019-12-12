@@ -50,20 +50,17 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 {
     struct z_solver     solver; 
     Clock               refine_clk;
-    cuDoubleComplex *gmHi, *gmH;
+    pastix_complex64_t *gmHi, *gmH;
     pastix_complex64_t *gmVi, *gmV;
-    pastix_complex64_t *gmVi_buffer;
-    pastix_complex64_t *gmWi, *gmW;
-    pastix_complex64_t *gmWi_host, *gmW_host;
-    cuDoubleComplex *gmsin;
-    cuDoubleComplex *gmcos;
-    cuDoubleComplex *gmG;
-    pastix_complex64_t buffer;
-    cuDoubleComplex *bufferG;
+    pastix_complex64_t *gmWi, *gmW, *gmWi_host;
+    pastix_complex64_t *gmcos, *gmsin;
+    pastix_complex64_t *gmG;
 #if defined(PASTIX_DEBUG_GMRES)
     pastix_complex64_t *dbg_x, *dbg_r, *dbg_G;
 #endif
     pastix_complex64_t  tmp;
+    pastix_complex64_t*  tmp_ptr;
+    pastix_complex64_t *d_b, *d_x;
     pastix_fixdbl_t     t0, t3;
     double              eps, resid, resid_b;
     double              norm, normb, normx;
@@ -88,21 +85,6 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
     itermax = pastix_data->iparm[IPARM_ITERMAX];
     eps     = pastix_data->dparm[DPARM_EPSILON_REFINEMENT];
     ldw     = n;
-    
-    cudaStream_t streams[64];
-    for(int x = 0; x < 64; x++){
-			cudaStreamCreate(streams + x);
-	}
-        
-
-	void* d_x;
-	void* d_b;
-	
-	cudaMalloc((void**)&d_x, n * sizeof(pastix_complex64_t));
-	cudaMalloc((void**)&d_b, n * sizeof(pastix_complex64_t));
-	
-	cudaMemcpy(d_x, x, n * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_b, b, n * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
 
     if ( !(pastix_data->steps & STEP_NUMFACT) ) {
         precond = 0;
@@ -112,10 +94,9 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         ldw = 0;
     }
 
-	cudaMalloc((void**)&gmcos, im  * sizeof(pastix_complex64_t));
-	cudaMalloc((void**)&gmsin, im  * sizeof(pastix_complex64_t));
-	cudaMalloc((void**)&gmG, im1  * sizeof(pastix_complex64_t));
-	cudaMalloc((void**)&bufferG, 2  * sizeof(pastix_complex64_t));
+    gmcos = (pastix_complex64_t *)solver.malloc(im  * sizeof(pastix_complex64_t));
+    gmsin = (pastix_complex64_t *)solver.malloc(im  * sizeof(pastix_complex64_t));
+    gmG   = (pastix_complex64_t *)solver.malloc(im1 * sizeof(pastix_complex64_t));
 
     /**
      * H stores the h_{i,j} elements ot the upper hessenberg matrix H (See Alg. 9.5 p 270)
@@ -127,75 +108,40 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
      * stores only temporarily one vector for the Ax product (ldw is set to 0 to
      * reuse the same vector at each iteration)
      */
-	cudaMalloc((void**)&gmH, im * im1 * sizeof(pastix_complex64_t));
-	cudaMalloc((void**)&gmV, n  * im1 * sizeof(pastix_complex64_t));
-	
+     
+    gmH = (pastix_complex64_t *)solver.malloc(im * im1 * sizeof(pastix_complex64_t));
+    gmV = (pastix_complex64_t *)solver.malloc(n  * im1 * sizeof(pastix_complex64_t));
     if (precond && (!savemem) ) {
-		cudaMalloc((void**)&gmW, n  * im * sizeof(pastix_complex64_t));
+        gmW = (pastix_complex64_t *)solver.malloc(n * im  * sizeof(pastix_complex64_t));
     }
     else {
-		cudaMalloc((void**)&gmW, n * sizeof(pastix_complex64_t));
+        gmW = (pastix_complex64_t *)solver.malloc(n       * sizeof(pastix_complex64_t));
     }
-    gmW_host = (pastix_complex64_t*) malloc(n  * im * sizeof(pastix_complex64_t));
-    cudaMemset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
+    if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+		gmWi_host = (pastix_complex64_t*) malloc(n * sizeof(pastix_complex64_t));
+		cudaMemset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
+		
+		d_x = (pastix_complex64_t *)solver.malloc(n * sizeof(pastix_complex64_t));
+		d_b = (pastix_complex64_t *)solver.malloc(n * sizeof(pastix_complex64_t));
+		cudaMemcpy( d_x, x, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+		cudaMemcpy( d_b, b, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+		tmp_ptr = b; b = d_b; d_b = tmp_ptr;
+		tmp_ptr = x; x = d_x; d_x = tmp_ptr;
+		}
+    else{
+		memset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
+	}
     
-    
-    gmVi_buffer = (pastix_complex64_t*) malloc(n * sizeof(pastix_complex64_t));
-/*
+
 #if defined(PASTIX_DEBUG_GMRES)
     dbg_x = (pastix_complex64_t *)solver.malloc(n   * sizeof(pastix_complex64_t));
     dbg_r = (pastix_complex64_t *)solver.malloc(n   * sizeof(pastix_complex64_t));
     dbg_G = (pastix_complex64_t *)solver.malloc(im1 * sizeof(pastix_complex64_t));
     solver.copy( pastix_data, n, x, dbg_x );
 #endif
-*/
-	void* ValuesGPU;
-	cudaMalloc((void**) &ValuesGPU, spm->nnzexp * sizeof(pastix_complex64_t));
-	cudaMemcpy(ValuesGPU, spm->valuesDouble, spm->nnzexp * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-	
-	pastix_int_t* colptrGPU;
-	cudaMalloc((void**) &colptrGPU, (spm->n+1) * sizeof(pastix_int_t));
-	cudaMemcpy(colptrGPU, spm->colptr, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-	
-	pastix_int_t* rowptrGPU;
-	cudaMalloc((void**) &rowptrGPU, spm->nnzexp * sizeof(pastix_int_t));
-	cudaMemcpy(rowptrGPU, spm->rowptr, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-	
-	pastix_int_t* permGPU;
-	cudaMalloc((void**) &permGPU, spm->n * sizeof(pastix_int_t));
-	cudaMemcpy(permGPU, pastix_data->ordemesh->permtab, spm->n * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-	
-	
-	
-	/*void* ValuesGPU;
-	pastix_int_t* rowtabGPU;
-	
-	cudaMalloc((void**) &ValuesGPU, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t));
-	if(pastix_data->bcsc->mtxtype == PastixGeneral && pastix_data->bcsc->Uvalues != NULL)
-    {
-		cudaMemcpy(ValuesGPU, pastix_data->bcsc->Uvalues, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-		pastix_data->bcsc->Uvalues = ValuesGPU;
-	}
-	else
-	{
-		cudaMemcpy(ValuesGPU, pastix_data->bcsc->Lvalues, pastix_data->bcsc->numElements * sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-		pastix_data->bcsc->Lvalues = ValuesGPU;
-	}
-    
-	cudaMalloc((void**) &rowtabGPU, pastix_data->bcsc->numElements * sizeof(pastix_int_t));
-	cudaMemcpy(rowtabGPU, pastix_data->bcsc->rowtab, pastix_data->bcsc->numElements * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-	pastix_data->bcsc->rowtab = rowtabGPU;
-	
-	for(int i = 0; i < pastix_data->bcsc->cscfnbr; i++){
-		bcsc_cblk_t* cblk = (pastix_data->bcsc->cscftab)+i;
-		pastix_int_t* coltabGPU;
-		cudaMalloc((void**) &coltabGPU, (cblk->colnbr + 1) * sizeof(pastix_int_t));
-		cudaMemcpy(coltabGPU, cblk->coltab, (cblk->colnbr + 1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-		cblk->coltab = coltabGPU;
-	}*/
-	
-    normb = solver.norm( pastix_data, n, d_b );
-    normx = solver.norm( pastix_data, n, d_x );
+
+    normb = solver.norm( pastix_data, n, b );
+    normx = solver.norm( pastix_data, n, x );
 
     clockInit(refine_clk);
     clockStart(refine_clk);
@@ -207,18 +153,19 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
      */
     outflag = 1;
     iters = 0;
-    
+
     while (outflag)
     {
         /* Initialize v_{0} and w_{0} */
         gmVi = gmV;
         
         /* Compute r0 = b - A * x */
-        solver.copy( pastix_data, n, d_b, gmVi );
+        solver.copy( pastix_data, n, b, gmVi );
         
         if ( normx > 0. ) {
             //solver.spmv( pastix_data, PastixNoTrans, -1.0, d_x, 1.0, gmVi, streams);
-            solver.unblocked_spmv_perm( n, -1., 1., ValuesGPU, d_x, gmVi, colptrGPU, rowptrGPU, permGPU );
+            //solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
+            solver.unblocked_spmv_perm( n, -1., 1., spm->valuesDouble, x, gmVi, spm->colptr, spm->rowptr, pastix_data->ordemesh->permtab );
         }
         
         /* Compute resid = ||r0||_f */
@@ -238,13 +185,15 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         tmp = (pastix_complex64_t)( 1.0 / resid );
         solver.scal( pastix_data, n, tmp, gmVi );
         
-		cudaMemcpy(gmG, &resid, sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-        //gmG[0] = (pastix_complex64_t)resid;
+        if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+			cudaMemcpy(gmG, &resid, sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+		else
+            gmG[0] = (pastix_complex64_t)resid;
+            
         inflag = 1;
         i = -1;
         gmHi = gmH - im1;
         gmWi = gmW - ldw;
-        gmWi_host = gmW_host - ldw;
         
         while( inflag )
         {
@@ -256,25 +205,29 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             /* Set H and W pointers to the beginning of columns i */
             gmHi = gmHi + im1;
             gmWi = gmWi + ldw;
-            gmWi_host = gmWi_host + ldw;
             
-            /* Backup v_{i} into w_{i} for the end */
-            //solver.copy( pastix_data, n, gmVi, gmWi);
+
            
+			solver.copy( pastix_data, n, gmVi, gmWi);
             /* Compute w_{i} = M^{-1} v_{i} */
-            cudaMemcpy(gmWi_host, gmVi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
             if ( precond ) {
-                solver.spsv( pastix_data, gmWi_host );
+				if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+					cudaMemcpy(gmWi_host, gmWi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+					solver.spsv( pastix_data, gmWi_host );
+					cudaMemcpy(gmWi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+				}
+				else
+					solver.spsv( pastix_data, gmWi );
             }
-			cudaMemcpy(gmWi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
 
             /* v_{i+1} = A (M^{-1} v_{i}) = A w_{i} */
             gmVi += n;
                                     
             //solver.unblocked_spmv( n, 1.0, 0., ValuesGPU, gmWi, gmVi, colptrGPU, rowptrGPU);
-            
             //solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, streams);
-            solver.unblocked_spmv_perm( n, 1.0, 0., ValuesGPU, gmWi, gmVi, colptrGPU, rowptrGPU, permGPU);
+            
+            //solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
+            solver.unblocked_spmv_perm( n, 1.0, 0., spm->valuesDouble, gmWi, gmVi, spm->colptr, spm->rowptr, pastix_data->ordemesh->permtab);
             
             /* Classical Gram-Schmidt */
             for (j=0; j<=i; j++)
@@ -283,9 +236,12 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
                 solver.dot( pastix_data, n, gmVi, gmV + j * n, ((pastix_complex64_t*)gmHi)+j );
                 
                 /* Compute v_{i+1} = v_{i+1} - h_{j,i} v_{j} */
-                cudaMemcpy(&buffer, gmHi + j, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-                buffer = -buffer;
-                solver.axpy( pastix_data, n, buffer ,  gmV + j * n, gmVi );
+                if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+					cudaMemcpy(&tmp, gmHi + j, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+				else
+					tmp = gmHi[j];
+					
+                solver.axpy( pastix_data, n, -tmp ,  gmV + j * n, gmVi );
                 
             }
             
@@ -293,8 +249,10 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             /* Compute || v_{i+1} ||_f */
             norm = solver.norm( pastix_data, n, gmVi );
             
-			cudaMemcpy(gmHi+i+1, &norm, sizeof(double), cudaMemcpyHostToDevice);
-           //gmHi[i+1] = norm;
+            if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+				cudaMemcpy(gmHi+i+1, &norm, sizeof(double), cudaMemcpyHostToDevice);
+			else
+				gmHi[i+1] = norm;
            
 
             /* Compute v_{i+1} = v_{i+1} / h_{i+1,i} iff h_{i+1,i} is not too small */
@@ -303,86 +261,61 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
                 tmp = (pastix_complex64_t)(1.0 / norm);
                 solver.scal( pastix_data, n, tmp, gmVi );
             }
-
-			cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
+            
+            
             /* Apply the previous Givens rotation to the new column (should call LAPACKE_zrot_work())*/
-            
-#if defined(PRECISION_z) ||defined(PRECISION_d)
-            for (j=0; j<i;j++)
-            {
-				cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (double*)(gmcos+j), gmsin+j);
-            }
-#else
-            for (j=0; j<i;j++)
-            {
-				cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (float*)(gmcos+j), gmsin+j);
-            }
-#endif
-            /*for (j=0; j<i;j++)
-            {
-                tmp = gmHi[j];
-                gmHi[j]   = gmcos[j] * tmp       +      gmsin[j]  * gmHi[j+1];
-                gmHi[j+1] = gmcos[j] * gmHi[j+1] - conj(gmsin[j]) * tmp;
-            }*/
-            
-
-            /*
-             * Compute the new Givens rotation (zrotg)
-             *
-             * t = sqrt( h_{i,i}^2 + h_{i+1,i}^2 )
-             * cos = h_{i,i}   / t
-             * sin = h_{i+1,i} / t
-             */
-            {
-				//cudaMemcpy(&bufferG1, gmHi+i, sizeof(pastix_complex64_t), cudaMemcpyDeviceToDevice);
-				//cublasZrotg(*(pastix_data->cublas_handle), bufferG1, bufferG2; 
-#if defined(PRECISION_z) ||defined(PRECISION_d)
-            cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (double*)(gmcos+i), gmsin+i); 
-#else
-            cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (float*)(gmcos+i), gmsin+i); 
-#endif 
-
+			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+				cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
 				
+				for (j=0; j<i;j++)
+				#if defined(PRECISION_z) ||defined(PRECISION_d)
+					cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (double*)(gmcos+j), gmsin+j);
+				#else
+					cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (float*)(gmcos+j), gmsin+j);
+				#endif
 				
-                /*tmp = csqrt( gmHi[i]   * gmHi[i] +
-                             gmHi[i+1] * gmHi[i+1] );
+			#if defined(PRECISION_z) ||defined(PRECISION_d)
+				cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (double*)(gmcos+i), gmsin+i); 
+			#else
+				cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (float*)(gmcos+i), gmsin+i); 
+			#endif 
+				/* Update the residuals (See p. 168, eq 6.35) */
+				cudaMemcpy(gmG+i+1, gmG+i, sizeof(pastix_complex64_t), cudaMemcpyDeviceToDevice);
+			#if defined(PRECISION_z) ||defined(PRECISION_c)
+				cuDoubleComplex negone = make_cuDoubleComplex(-1.0,0);
+			#else
+				cuDoubleComplex negone = -1.0;
+			#endif
+				cublasZscal(*(pastix_data->cublas_handle), 1, gmsin+i, gmG+i+1, 1);
+				cublasZscal(*(pastix_data->cublas_handle), 1, gmcos+i, gmG+i, 1);
+				cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
+				cublasZscal(*(pastix_data->cublas_handle), 1, &negone, gmG+i+1, 1);
+				cudaMemcpy(&tmp, gmG+i+1, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+			}
+			else{
+				for (j=0; j<i;j++)
+				{
+					tmp = gmHi[j];
+					gmHi[j]   = gmcos[j] * tmp       +      gmsin[j]  * gmHi[j+1];
+					gmHi[j+1] = gmcos[j] * gmHi[j+1] - conj(gmsin[j]) * tmp;
+				}
+				
+				tmp = csqrt( gmHi[i]   * gmHi[i] +
+							 gmHi[i+1] * gmHi[i+1] );
 
-                if ( cabs(tmp) <= eps ) {
-                    tmp = (pastix_complex64_t)eps;
-                }
-                gmcos[i] = gmHi[i]   / tmp;
-                gmsin[i] = gmHi[i+1] / tmp;*/
-            }
-
-
-            /* Update the residuals (See p. 168, eq 6.35) */
-            cudaMemcpy(gmG+i+1, gmG+i, sizeof(pastix_complex64_t), cudaMemcpyDeviceToDevice);
-#if defined(PRECISION_z) ||defined(PRECISION_c)
-            cuDoubleComplex negone = make_cuDoubleComplex(-1.0,0);
-#else
-            cuDoubleComplex negone = -1.0;
-#endif
-            cublasZscal(*(pastix_data->cublas_handle), 1, gmsin+i, gmG+i+1, 1);
-            cublasZscal(*(pastix_data->cublas_handle), 1, gmcos+i, gmG+i, 1);
-			cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
-            cublasZscal(*(pastix_data->cublas_handle), 1, &negone, gmG+i+1, 1);
-            //gmG[i+1] = -gmsin[i] * gmG[i];
-            //gmG[i]   =  gmcos[i] * gmG[i];
-
-
-            /* Apply the last Givens rotation */
-           // gmHi[i] = gmcos[i] * gmHi[i] + gmsin[i] * gmHi[i+1];
-
-
-            /* (See p. 169, eq 6.42) */
-            
+				if ( cabs(tmp) <= eps ) {
+					tmp = (pastix_complex64_t)eps;
+				}
+				gmcos[i] = gmHi[i]   / tmp;
+				gmsin[i] = gmHi[i+1] / tmp;
+				
+				tmp = gmG[i+1] = -gmsin[i] * gmG[i];
+				gmG[i]   =  gmcos[i] * gmG[i];
+				
+				gmHi[i] = gmcos[i] * gmHi[i] + gmsin[i] * gmHi[i+1];
+			}
 			
-			
-			pastix_complex64_t tmp_resid;
-			
-			cudaMemcpy(&tmp_resid, gmG+i+1, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-			
-            resid = cabs( tmp_resid );
+            resid = cabs( tmp );
 
 
             resid_b = resid / normb;
@@ -400,40 +333,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             t3 = clockGet();
             if ( pastix_data->iparm[IPARM_VERBOSE] > PastixVerboseNot ) {
                 solver.output_oneiter( t0, t3, resid_b, iters );
-
-#if defined(PASTIX_DEBUG_GMRES)
-                {
-                    double normr2;
-
-                    /* Compute y_m = H_m^{-1} g_m (See p. 169) */
-                    memcpy( dbg_G, gmG, im1 * sizeof(pastix_complex64_t) );
-                    cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit,
-                                 i+1, gmH, im1, dbg_G, 1 );
-
-                    solver.copy( pastix_data, n, b, dbg_r );
-                    solver.copy( pastix_data, n, x, dbg_x );
-
-                    /* Accumulate the current v_m */
-                    solver.gemv( pastix_data, n, i+1, 1.0, (precond ? gmW : gmV), n, dbg_G, 1.0, dbg_x );
-
-        
-        cudaDeviceSynchronize();
-                    /* Compute b - Ax */
-                    solver.unblocked_spmv( pastix_data, PastixNoTrans, -1., dbg_x, 1., dbg_r, streams );
-        
-        cudaDeviceSynchronize();
-
-                    normr2 = solver.norm( pastix_data, n, dbg_r );
-                    fprintf(stdout, OUT_ITERREFINE_ERR, normr2 / normb );
-                }
-#endif
             }
         }
 
         /* Compute y_m = H_m^{-1} g_m (See p. 169) */
-        cublasZtrsv(*(pastix_data->cublas_handle), CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, i+1, gmH, im1, gmG, 1);
-        /*cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit,
-                     i+1, gmH, im1, gmG, 1 );*/
+        if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+			cublasZtrsv(*(pastix_data->cublas_handle), CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, i+1, gmH, im1, gmG, 1);
+		else
+			cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, i+1, gmH, im1, gmG, 1 );
 
         /**
          * Compute x_m = x_0 + M^{-1} V_m y_m
@@ -460,9 +367,8 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
              */
              
             gmWi = precond ? gmW : gmV;
-            gmWi_host = gmW_host;
             
-            solver.gemv( pastix_data, n, i+1, 1.0, gmWi, n, (pastix_complex64_t*)gmG, 1.0, d_x );
+            solver.gemv( pastix_data, n, i+1, 1.0, gmWi, n, (pastix_complex64_t*)gmG, 1.0, x );
             
         }
 
@@ -472,23 +378,32 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         }
     }
     
-	cudaMemcpy(x, d_x, n * sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 
     clockStop( refine_clk );
     t3 = clockGet();
 
+    if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+		tmp_ptr = b; b = d_b; d_b = tmp_ptr;
+		tmp_ptr = x; x = d_x; d_x = tmp_ptr;
+		cudaMemcpy(x, d_x, n * sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+		free(gmWi_host);
+		solver.free(d_b);
+		solver.free(d_x);
+	}
+
     solver.output_final( pastix_data, resid_b, iters, t3, x, x );
 
-    cudaFree(gmcos);
-    cudaFree(gmsin);
-    cudaFree(gmG);
-    cudaFree(gmH);
-    cudaFree(gmV);
-    cudaFree(gmW);
+
+    solver.free(gmcos);
+    solver.free(gmsin);
+    solver.free(gmG);
+    solver.free(gmH);
+    solver.free(gmV);
+    solver.free(gmW);
 #if defined(PASTIX_DEBUG_GMRES)
-    cudaFree(dbg_x);
-    cudaFree(dbg_r);
-    cudaFree(dbg_G);
+    solver.free(dbg_x);
+    solver.free(dbg_r);
+    solver.free(dbg_G);
 #endif
 
     return iters;

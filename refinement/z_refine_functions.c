@@ -120,8 +120,14 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
     int num_gpus = pastix_data->iparm[IPARM_GPU_NBR];
     
     /* Allocations */
-    solver->malloc  = &bvec_malloc;
-    solver->free    = &bvec_free;
+    if ( num_gpus > 0){
+		solver->malloc  = &bvec_malloc_cuda;
+		solver->free    = &bvec_free_cuda;
+	}
+	else{
+		solver->malloc  = &bvec_malloc;
+		solver->free    = &bvec_free;
+	}
 
     /* Output */
     solver->output_oneiter = &z_refine_output_oneiter;
