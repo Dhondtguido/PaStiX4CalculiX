@@ -211,6 +211,81 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 				}
 			}
 			else{
+				
+				createLightSpMV(n, spm->gnnz);
+				
+				double* permValuesT = (double*) malloc(spm->gnnz * sizeof(double));
+				double* dValues = (double*) spm->valuesDouble;
+				
+				pastix_int_t* temp = (pastix_int_t*) calloc(spm->n, sizeof(pastix_int_t));
+				
+				for(int i = 0; i < spm->n; i++){
+					for(int j = spm->colptr[i] - 1; j < spm->colptr[i+1] - 1 ; j++){
+						pastix_int_t target = spm->colptr[spm->rowptr[j]-1]-1 + (temp[spm->rowptr[j]-1]++);
+						permValuesT[target] = dValues[j];
+					}
+				}
+				
+				free(temp);
+				
+				pastix_int_t* perm = pastix_data->ordemesh->permtab;
+				pastix_int_t* newColptr = (pastix_int_t*) malloc((spm->n+1) * sizeof(pastix_int_t));
+				pastix_int_t* newRowptr = (pastix_int_t*) malloc((spm->gnnz) * sizeof(pastix_int_t));
+				
+				newColptr[0] = 1;
+				for(pastix_int_t i = 0; i < spm->n; i++){
+					newColptr[i+1] = newColptr[i] + spm->colptr[pastix_data->ordemesh->peritab[i]+1] - spm->colptr[pastix_data->ordemesh->peritab[i]];
+				}
+				
+				for(pastix_int_t i = 0; i < spm->nnz; i++){
+					newRowptr[i] = perm[spm->rowptr[i]-1] + 1;
+					dValues[i] = 0.0;
+				}
+				
+				for(int i = 0; i < spm->n; i++){
+					for(pastix_int_t j = spm->colptr[i] - 1; j < spm->colptr[i+1] - 1 ; j++){
+						pastix_int_t target = newColptr[pastix_data->ordemesh->permtab[i]] - 1 + j - spm->colptr[i] + 1;
+						
+						spm->rowptr[target] = newRowptr[j];
+						dValues[target] = permValuesT[j];
+					}
+				}
+				
+				/*
+				
+				bcsc_cblk_t* firstCblk = bcsc->cscftab;
+				float* L_old = (float*) bcsc->Lvalues;
+				for(pastix_int_t i = 0; i < 10; i++){
+					if(firstCblk->coltab[i] < firstCblk->coltab[i+1]){
+						printf("bcsc:\n");
+						printf("col = %ld    row = %ld\n", i+1, bcsc->rowtab[firstCblk->coltab[i]]+1);
+						printf("%.15f\n", L_old[firstCblk->coltab[i]]);
+						
+						pastix_int_t minimum = 1000000000;
+						pastix_int_t index = 0;
+						for(pastix_int_t j = newColptr[i]; j < newColptr[i+1]; j++){
+							if(spm->rowptr[j] < minimum){
+								minimum = spm->rowptr[j];
+								index = j;
+							}
+						}	
+						printf("big csc:\n");
+						printf("col = %ld    row = %ld\n", i+1, minimum);
+						printf("%.15lf\n", dValues[index]);
+						printf("\n");
+					}
+					
+					printf("\n");
+					
+
+				}*/
+				
+				free(spm->colptr);
+				free(newRowptr);
+				spm->colptr = newColptr;
+				//spm->rowptr = newRowptr;
+				free(permValuesT);
+				
 				void* ValuesGPU;
 				cudaMalloc((void**) &ValuesGPU, spm->nnzexp * sizeof(double));
 				cudaMemcpy(ValuesGPU, spm->valuesDouble, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice);

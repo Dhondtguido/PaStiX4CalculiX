@@ -31,10 +31,10 @@ precisions_rules_py(cuda_generated_files
   PRECISIONS "s;d;c;z")
   
 set(LIGHTSPMV
-  LightSpMV-1.0/src/cLightSpMV.cu
-  LightSpMV-1.0/src/Options.cu
-  LightSpMV-1.0/src/SpMV.cu
-  LightSpMV-1.0/src/SpMVCSR.cu
+  ${CMAKE_CURRENT_SOURCE_DIR}/LightSpMV-1.0/src/cLightSpMV.cu
+  ${CMAKE_CURRENT_SOURCE_DIR}/LightSpMV-1.0/src/Options.cu
+  ${CMAKE_CURRENT_SOURCE_DIR}/LightSpMV-1.0/src/SpMV.cu
+  ${CMAKE_CURRENT_SOURCE_DIR}/LightSpMV-1.0/src/SpMVCSR.cu
 )
 
 set(cuda_generated_files ${cuda_generated_files} ${LIGHTSPMV})
@@ -84,7 +84,7 @@ set_source_files_properties(
 #   # endif()
 # endforeach()
 # set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS_BACKUP})
-
+message(${cuda_generated_files})
 cuda_add_library(pastix_kernels_cuda
   ${cuda_generated_files})
 cuda_add_cublas_to_target( pastix_kernels_cuda )

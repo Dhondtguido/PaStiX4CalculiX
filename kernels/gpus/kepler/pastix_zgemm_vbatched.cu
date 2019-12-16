@@ -340,8 +340,8 @@ pastix_z_spmvp_kernel_perm(
         pastix_complex64_t dot = 0.0;
         
         #pragma unroll
-        for( j = drowptr[ row ] - 1; j < drowptr[ row + 1 ] - 1; j++){
-           dot += dval[ j ] * dx[ perm[dcolind[ j ] - 1] ];
+        for( j = drowptr[ row ]; j < drowptr[ row + 1 ]; j++){
+           dot += dval[ j ] * dx[ perm[dcolind[ j ]] ];
 		}
 		
         dy[ perm[row] ] =  alpha * dot + beta * dy[ perm[row] ];
