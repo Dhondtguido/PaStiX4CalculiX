@@ -144,6 +144,7 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
 #endif
 
 	if ( num_gpus > 0){
+#ifdef PASTIX_WITH_CUDA
 		solver->spmv = &bcsc_zspmv;
 		solver->unblocked_spmv = &gpu_z_spmv;
 		solver->unblocked_spmv_perm = &gpu_z_spmv_perm;
@@ -153,6 +154,7 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
         solver->scal = &bvec_zscal_cuda;
         solver->norm = &bvec_znrm2_cuda;
         solver->gemv = &bvec_zgemv_cuda;
+#endif
 	}
     else if ( sched == PastixSchedSequential ) {
         solver->spmv = &bcsc_zspmv;

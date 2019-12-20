@@ -220,6 +220,7 @@ bvec_znrm2_cuda( pastix_data_t            *pastix_data,
                 const cuDoubleComplex *x )
 {
     (void)pastix_data;
+#ifdef PASTIX_WITH_CUDA
 #if defined(PRECISION_z) || defined(PRECISION_d)
     double norm;
 #else
@@ -243,6 +244,7 @@ bvec_znrm2_cuda( pastix_data_t            *pastix_data,
     return (double) norm;
 #else
 	return norm;
+#endif
 #endif
 }
 
@@ -393,7 +395,9 @@ bvec_zscal_cuda( pastix_data_t      *pastix_data,
                 cuDoubleComplex  alpha,
                 cuDoubleComplex *x)
 {
+#ifdef PASTIX_WITH_CUDA
     cublasZscal( *(pastix_data->cublas_handle), n, &alpha, x, 1 );
+#endif
 }
 
 /**
@@ -561,7 +565,10 @@ bvec_zaxpy_cuda( pastix_data_t            *pastix_data,
                 const cuDoubleComplex *x,
                 cuDoubleComplex       *y)
 {
+	
+#ifdef PASTIX_WITH_CUDA
     cublasZaxpy( *(pastix_data->cublas_handle), n, &alpha, x, 1, y, 1 );
+#endif
 }
 
 
@@ -748,9 +755,12 @@ bvec_zdotc_cuda( pastix_data_t            *pastix_data,
                 cuDoubleComplex       *r)
 {
     (void)pastix_data;
+#ifdef PASTIX_WITH_CUDA
     cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
     cublasZdotc(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
+	
+#endif
 }
 
 
@@ -934,9 +944,11 @@ bvec_zdotu_cuda( pastix_data_t            *pastix_data,
                 const cuDoubleComplex *y,
                 cuDoubleComplex       *r  )
 {
+#ifdef PASTIX_WITH_CUDA
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
     cublasZdotu(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
+#endif
 }
 
 /**
@@ -1220,7 +1232,9 @@ bvec_zcopy_cuda( pastix_data_t            *pastix_data,
                 cuDoubleComplex       *y )
 {
     (void)pastix_data;
+#ifdef PASTIX_WITH_CUDA
     cudaMemcpy( y, x, n * sizeof(cuDoubleComplex), cudaMemcpyDeviceToDevice );
+#endif
 }
 
 /**
@@ -1482,7 +1496,9 @@ bvec_zgemv_cuda( pastix_data_t            *pastix_data,
                 cuDoubleComplex        beta,
                 cuDoubleComplex       *y )
 {
+#ifdef PASTIX_WITH_CUDA
     cublasZgemv( *(pastix_data->cublas_handle), CUBLAS_OP_N, m, n,
                  &alpha, A, lda, x, 1,
                  &beta, y, 1 );
+#endif
 }

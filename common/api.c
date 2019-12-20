@@ -362,7 +362,7 @@ pastixInitParam( pastix_int_t *iparm,
     /* Refinement */
     iparm[IPARM_REFINEMENT]            = PastixRefineGMRES;
     iparm[IPARM_NBITER]                = 0;
-    iparm[IPARM_ITERMAX]               = 2500;
+    iparm[IPARM_ITERMAX]               = 250;
     iparm[IPARM_GMRES_IM]              = 25;
 
     /* Context */
@@ -372,7 +372,7 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 75;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
     iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 32 * 1024;
 
     /* Compression */
@@ -563,8 +563,13 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
     /*
      * Allocate pastix_data structure when we enter PaStiX for the first time.
      */
-    MALLOC_INTERN(pastix, 1, pastix_data_t);
-    memset( pastix, 0, sizeof(pastix_data_t) );
+    if(*pastix_data == NULL){
+		MALLOC_INTERN(*pastix_data, 1, pastix_data_t);
+		memset( *pastix_data, 0, sizeof(pastix_data_t) );
+		(*pastix_data)->parsec = NULL;
+	}
+	
+	pastix = *pastix_data;
 
     /*
      * Check if MPI is initialized
@@ -593,12 +598,22 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
         pastixInitParam( iparm, dparm );
     }
     
-    pastix->cublas_handle = (cublasHandle_t*) malloc(sizeof(cublasHandle_t));
-    pastix->cublas_stat = (cublasStatus_t*) malloc(sizeof(cublasStatus_t));
-	*(pastix->cublas_stat) = cublasCreate(pastix->cublas_handle);
-	if (*(pastix->cublas_stat) != CUBLAS_STATUS_SUCCESS) {
-        printf ("CUBLAS initialization failed\n");
-    }
+    if(iparm[IPARM_GPU_NBR] > 0){
+		
+#ifdef PASTIX_WITH_CUDA
+		pastix->cublas_handle = (cublasHandle_t*) malloc(sizeof(cublasHandle_t));
+		pastix->cublas_stat = (cublasStatus_t*) malloc(sizeof(cublasStatus_t));
+		*(pastix->cublas_stat) = cublasCreate(pastix->cublas_handle);
+		if (*(pastix->cublas_stat) != CUBLAS_STATUS_SUCCESS) {
+			printf ("CUBLAS initialization failed\n");
+		}
+#endif
+	}
+	else
+	{
+		pastix->cublas_handle = NULL;
+		pastix->cublas_stat = NULL;
+	}
    // *(pastix->cublas_stat) = cublasSetMathMode(*(pastix->cublas_handle), CUBLAS_TENSOR_OP_MATH);
 
     pastix->iparm = iparm;
@@ -608,7 +623,7 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
 
     pastix->isched = NULL;
 #if defined(PASTIX_WITH_PARSEC)
-    pastix->parsec = NULL;
+    //pastix->parsec = NULL;
 #endif
 #if defined(PASTIX_WITH_STARPU)
     pastix->starpu = NULL;
@@ -742,6 +757,18 @@ pastixFinalize( pastix_data_t **pastix_data )
     pastixSummary( *pastix_data );
 
     ischedFinalize( pastix->isched );
+    
+    
+	if( pastix->cublas_handle != NULL){
+		
+#ifdef PASTIX_WITH_CUDA
+		cublasDestroy(*(pastix->cublas_handle));
+		
+		free(pastix->cublas_handle);
+		free(pastix->cublas_stat);
+#endif
+		
+	}
 
     if ( pastix->graph != NULL )
     {
@@ -779,7 +806,7 @@ pastixFinalize( pastix_data_t **pastix_data )
     }
 #if defined(PASTIX_WITH_PARSEC)
     if (pastix->parsec != NULL) {
-        pastix_parsec_finalize( pastix );
+        //pastix_parsec_finalize( pastix );
     }
 #endif /* defined(PASTIX_WITH_PARSEC) */
 #if defined(PASTIX_WITH_STARPU)
@@ -806,5 +833,5 @@ pastixFinalize( pastix_data_t **pastix_data )
     if ( pastix->dirtemp != NULL ) {
         free( pastix->dirtemp );
     }
-    memFree_null(*pastix_data);
+    //memFree_null(*pastix_data);
 }

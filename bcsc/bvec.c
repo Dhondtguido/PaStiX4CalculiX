@@ -58,9 +58,11 @@ void *bvec_malloc( size_t size )
  *******************************************************************************/
 void *bvec_malloc_cuda( size_t size )
 {
+#ifdef PASTIX_WITH_CUDA
     void *x = NULL;
     cudaMalloc(&x, sizeof(char) * size);
     return x;
+#endif
 }
 
 /**
@@ -96,6 +98,8 @@ void bvec_free( void *x )
  *******************************************************************************/
 void bvec_free_cuda( void *x )
 {
+#ifdef PASTIX_WITH_CUDA
     cudaFree(x);
+#endif
 }
 

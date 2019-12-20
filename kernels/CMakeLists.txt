@@ -111,12 +111,14 @@ if(PASTIX_WITH_CUDA)
        ${CUDA_generated_files})
 
    add_subdirectory(gpus)
-
+   cuda_add_library(pastix_kernels
+     ${kernels_sources}
+   )
+else(PASTIX_WITH_CUDA)
+   add_library(pastix_kernels
+     ${kernels_sources}
+   )
 endif(PASTIX_WITH_CUDA)
-
-cuda_add_library(pastix_kernels
-  ${kernels_sources}
-  )
 
 set_source_files_properties(
   ${kernels_sources}
@@ -155,7 +157,9 @@ install(TARGETS pastix_kernels
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib)
 
+if(PASTIX_WITH_CUDA)
 cuda_build_clean_target()
+endif()
 ### Add documented files to the global property
 add_documented_files(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

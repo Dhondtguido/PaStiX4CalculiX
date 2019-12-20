@@ -613,9 +613,11 @@ pastix_task_numfact( pastix_data_t *pastix_data,
     
     
     
+#ifdef PASTIX_WITH_CUDA
     printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_s_cblok_gemms, gpu_s_cblok_gemms);
     printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_s_blok_gemms, gpu_s_blok_gemms);
     printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_s_trsm, gpu_s_trsm);
+#endif
 
 
     return EXIT_SUCCESS;

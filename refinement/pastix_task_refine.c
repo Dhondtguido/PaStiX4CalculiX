@@ -156,32 +156,150 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
         }
     }
     
-    
     void *xptr = (char *)(*x);
 	void *bptr = (char *)(*b);
+
+    clockStart(timer);
+    {
+        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *, spmatrix_t *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
+        
+        size_t shiftx, shiftb;
+        int i;
+
+        shiftx = ldx * pastix_size_of( PastixDouble );
+        shiftb = ldb * pastix_size_of( PastixDouble );
+
+        for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
+            pastix_int_t it;
+            it = refinefct( pastix_data, xptr, bptr, spm);
+            pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
+        }
+	}
+    clockStop(timer);
+
+    pastix_data->dparm[DPARM_REFINE_TIME] = clockVal(timer);
+    if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
+        pastix_print( 0, 0, OUT_TIME_REFINE,
+                      pastix_data->dparm[DPARM_REFINE_TIME] );
+    }
+    
+    if ( iparm[IPARM_GPU_NBR] > 0 ) {
+#ifdef PASTIX_WITH_CUDA
+		cudaFree(spm->valuesDouble);
+		spm->valuesDouble = NULL;
+		cudaFree(spm->colptr);
+		spm->colptr = NULL;
+		cudaFree(spm->rowptr);
+		spm->rowptr = NULL;
+		cudaFree(pastix_data->ordemesh->permtab);
+		pastix_data->ordemesh->permtab = NULL;
+#endif
+	}
+	
+    (void)n;
+    return PASTIX_SUCCESS;
+}
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup pastix_users
+ *
+ * @brief Perform iterative refinement.
+ *
+ * This routine performs the permutation of x, and b before and after the
+ * iterative refinement solution. To prevent extra permuation to happen, see
+ * pastix_subtask_refine().
+ * This routine is affected by the following parameters:
+ *   IPARM_REFINEMENT, DPARM_EPSILON_REFINEMENT
+ *
+ *******************************************************************************
+ *
+ * @param[in] pastix_data
+ *          The PaStiX data structure that describes the solver instance.
+ *
+ * @param[in] n
+ *          The size of system to solve, and the number of rows of both
+ *          matrices b and x.
+ *
+ * @param[in] nrhs
+ *          The number of right hand side members, and the number of columns of
+ *          b and x.
+ *
+ * @param[inout] b
+ *          The right hand side matrix of size ldb-by-nrhs.
+ *          B is noted as inout, as permutation might be performed on the
+ *          matrix. On exit, the matrix is restored as it was on entry.
+ *
+ * @param[in] ldb
+ *          The leading dimension of the matrix b. ldb >= n.
+ *
+ * @param[inout] x
+ *          The matrix x of size ldx-by-nrhs.
+ *          On entry, the initial guess x0 for the refinement step, that may be
+ *          the solution returned by the solve step or any other initial guess.
+ *          On exit, contains the final solution after the iterative refinement.
+ *
+ * @param[in] ldx
+ *          The leading dimension of the matrix x. ldx >= n.
+ *
+ *******************************************************************************
+ *
+ * @retval PASTIX_SUCCESS on successful exit,
+ * @retval PASTIX_ERR_BADPARAMETER if one parameter is incorrect,
+ *
+ *******************************************************************************/
+int
+pastix_task_refine( pastix_data_t *pastix_data,
+                    pastix_int_t n, pastix_int_t nrhs,
+                    void **b, pastix_int_t ldb,
+                    void **x, pastix_int_t ldx,
+                    spmatrix_t* spm )
+{
+    pastix_int_t  *iparm = pastix_data->iparm;
+    pastix_bcsc_t *bcsc  = pastix_data->bcsc;
+    int rc;
+    double timer;
+
+    if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
+    {
+        fprintf(stderr, "Refinement is not available with Schur complement when non local solve is required\n");
+        return PASTIX_ERR_BADPARAMETER;
+    }
+
+    /* Prepare the refinement threshold, if not set by the user */
+    if ( pastix_data->dparm[DPARM_EPSILON_REFINEMENT] < 0. ) {
+        if ( (bcsc->flttype == PastixFloat) ||
+             (bcsc->flttype == PastixComplex32) ) {
+            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
+        }
+        else {
+            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
+        }
+    }
+    
+    pastix_data->iparm[IPARM_GPU_NBR] = 0;
+
     clockStart(timer);
     {
 		
        if(iparm[66] == 2){
-			
+			/*
 			double *xptrD = (double*) malloc(sizeof(double) * n);
-			double *bptrD = (double*) malloc(sizeof(double) * n);
+		//	double *bptrD = (double*) malloc(sizeof(double) * n);
 			
 			#pragma omp parallel for
 			for(int i = 0; i < n; i++){
-				xptrD[i] = (double) (((float*) xptr)[i]);
-				bptrD[i] = (double) (((float*) bptr)[i]);
+				xptrD[i] = (double) (((float*) *x)[i]);
+		//		bptrD[i] = (double) (((float*) *b)[i]);
 			}
 			
 			free(*x);
-			free(*b);
+		//	free(*b);
 			
 			*x = (char*) xptrD;
-			*b = (char*) bptrD;
-			
-			xptr = (char*) xptrD;
-			bptr = (char*) bptrD;
-			
+		//	*b = (char*) bptrD;
+			*/
 			
 			if ( iparm[IPARM_GPU_NBR] <= 0 ) {
 				int numElements = bcsc->numElements;
@@ -211,6 +329,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 				}
 			}
 			else{
+#ifdef PASTIX_WITH_CUDA
 				
 				createLightSpMV(n, spm->gnnz);
 				
@@ -309,6 +428,7 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 				cudaMemcpy(permGPU, pastix_data->ordemesh->permtab, spm->n * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
 				free(pastix_data->ordemesh->permtab);
 				pastix_data->ordemesh->permtab = permGPU;
+#endif
 			}
 			/*void* ValuesGPU;
 			pastix_int_t* rowtabGPU;
@@ -366,130 +486,18 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 			}*/
 		}
 	}
+	
+	bcsc->flttype = PastixDouble;
     clockStop(timer);
+    
+    
     
     if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
         pastix_print( 0, 0, OUT_TIME_CAST,
                       clockVal(timer) );
     }
 
-    clockStart(timer);
-    {
-        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *, spmatrix_t *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
-        
-        size_t shiftx, shiftb;
-        int i;
 
-        shiftx = ldx * pastix_size_of( pastix_data->bcsc->flttype );
-        shiftb = ldb * pastix_size_of( pastix_data->bcsc->flttype );
-
-        for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
-            pastix_int_t it;
-            it = refinefct( pastix_data, xptr, bptr, spm);
-            pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
-        }
-	}
-    clockStop(timer);
-
-    pastix_data->dparm[DPARM_REFINE_TIME] = clockVal(timer);
-    if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
-        pastix_print( 0, 0, OUT_TIME_REFINE,
-                      pastix_data->dparm[DPARM_REFINE_TIME] );
-    }
-    
-    if ( iparm[IPARM_GPU_NBR] > 0 ) {
-		cudaFree(spm->valuesDouble);
-		spm->valuesDouble = NULL;
-		cudaFree(spm->colptr);
-		spm->colptr = NULL;
-		cudaFree(spm->rowptr);
-		spm->rowptr = NULL;
-		cudaFree(pastix_data->ordemesh->permtab);
-		pastix_data->ordemesh->permtab = NULL;
-	}
-	
-	bcsc->flttype = PastixDouble;
-	
-    (void)n;
-    return PASTIX_SUCCESS;
-}
-
-/**
- *******************************************************************************
- *
- * @ingroup pastix_users
- *
- * @brief Perform iterative refinement.
- *
- * This routine performs the permutation of x, and b before and after the
- * iterative refinement solution. To prevent extra permuation to happen, see
- * pastix_subtask_refine().
- * This routine is affected by the following parameters:
- *   IPARM_REFINEMENT, DPARM_EPSILON_REFINEMENT
- *
- *******************************************************************************
- *
- * @param[in] pastix_data
- *          The PaStiX data structure that describes the solver instance.
- *
- * @param[in] n
- *          The size of system to solve, and the number of rows of both
- *          matrices b and x.
- *
- * @param[in] nrhs
- *          The number of right hand side members, and the number of columns of
- *          b and x.
- *
- * @param[inout] b
- *          The right hand side matrix of size ldb-by-nrhs.
- *          B is noted as inout, as permutation might be performed on the
- *          matrix. On exit, the matrix is restored as it was on entry.
- *
- * @param[in] ldb
- *          The leading dimension of the matrix b. ldb >= n.
- *
- * @param[inout] x
- *          The matrix x of size ldx-by-nrhs.
- *          On entry, the initial guess x0 for the refinement step, that may be
- *          the solution returned by the solve step or any other initial guess.
- *          On exit, contains the final solution after the iterative refinement.
- *
- * @param[in] ldx
- *          The leading dimension of the matrix x. ldx >= n.
- *
- *******************************************************************************
- *
- * @retval PASTIX_SUCCESS on successful exit,
- * @retval PASTIX_ERR_BADPARAMETER if one parameter is incorrect,
- *
- *******************************************************************************/
-int
-pastix_task_refine( pastix_data_t *pastix_data,
-                    pastix_int_t n, pastix_int_t nrhs,
-                    void **b, pastix_int_t ldb,
-                    void **x, pastix_int_t ldx,
-                    spmatrix_t* spm )
-{
-    pastix_int_t  *iparm = pastix_data->iparm;
-    pastix_bcsc_t *bcsc  = pastix_data->bcsc;
-    int rc;
-
-    if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
-    {
-        fprintf(stderr, "Refinement is not available with Schur complement when non local solve is required\n");
-        return PASTIX_ERR_BADPARAMETER;
-    }
-
-    /* Prepare the refinement threshold, if not set by the user */
-    if ( pastix_data->dparm[DPARM_EPSILON_REFINEMENT] < 0. ) {
-        if ( (bcsc->flttype == PastixFloat) ||
-             (bcsc->flttype == PastixComplex32) ) {
-            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
-        }
-        else {
-            pastix_data->dparm[DPARM_EPSILON_REFINEMENT] = 1e-12;
-        }
-    }
 
     /* Compute P * b */
     rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
@@ -504,13 +512,15 @@ pastix_task_refine( pastix_data_t *pastix_data,
     if( rc != PASTIX_SUCCESS ) {
         return rc;
     }
-
+	if(iparm[66] == 2)
+		bcsc->flttype = PastixFloat;
     /* Performe the iterative refinement */
     rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx, spm );
     if( rc != PASTIX_SUCCESS ) {
         return rc;
     }
-
+	if(iparm[66] == 2)
+		bcsc->flttype = PastixDouble;
     /* Compute P * b */
     rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
                                     PastixDirBackward, bcsc->gN, nrhs, *b, ldb );
@@ -525,6 +535,7 @@ pastix_task_refine( pastix_data_t *pastix_data,
         return rc;
     }
 
+    pastix_data->iparm[IPARM_GPU_NBR] = 1;
     (void)n;
     return PASTIX_SUCCESS;
 }

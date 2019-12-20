@@ -33,12 +33,8 @@
 #include <starpu_scheduler.h>
 #include <starpu_cuda.h>
 
-#include <cublas.h>
-#include <starpu_cublas.h>
-#if defined(PASTIX_WITH_CUBLAS_V2)
 #include <cublas_v2.h>
 #include <starpu_cublas_v2.h>
-#endif
 #endif
 
 typedef struct starpu_conf starpu_conf_t;

@@ -171,7 +171,8 @@ pastix_subtask_order(       pastix_data_t  *pastix_data,
      * Clean ordering if it exists
      */
     if (pastix_data->ordemesh != NULL) {
-        pastixOrderExit(pastix_data->ordemesh);
+		return 0;
+        //pastixOrderExit(pastix_data->ordemesh);
     } else {
         MALLOC_INTERN( pastix_data->ordemesh, 1, pastix_order_t );
     }

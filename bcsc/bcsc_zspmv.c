@@ -143,6 +143,7 @@ __bcsc_zspmv_Ax_cuda( const pastix_bcsc_t      *bcsc,
 				 cudaStream_t		       stream )
 {
 			
+#ifdef PASTIX_WITH_CUDA
 	pastix_z_spmv(cblk->colnbr,
 				 alpha,
 				 A,
@@ -152,6 +153,7 @@ __bcsc_zspmv_Ax_cuda( const pastix_bcsc_t      *bcsc,
 				 beta,
 				 y,
 				 stream);
+#endif
 				 
 		/*		 
     __bcsc_zspmv_by( cblk->colnbr, beta, y );
@@ -348,7 +350,9 @@ __bcsc_zspmv_loop_cuda( pastix_trans_t            trans,
         y += cblk->colnbr;
         cblk++;
     }
+#ifdef PASTIX_WITH_CUDA
     cudaDeviceSynchronize();
+#endif
 }
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */

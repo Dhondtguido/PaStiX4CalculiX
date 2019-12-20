@@ -118,6 +118,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         gmW = (pastix_complex64_t *)solver.malloc(n       * sizeof(pastix_complex64_t));
     }
     if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 		gmWi_host = (pastix_complex64_t*) malloc(n * sizeof(pastix_complex64_t));
 		cudaMemset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
 		
@@ -127,6 +128,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 		cudaMemcpy( d_b, b, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
 		tmp_ptr = b; b = d_b; d_b = tmp_ptr;
 		tmp_ptr = x; x = d_x; d_x = tmp_ptr;
+#endif
 		}
     else{
 		memset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
@@ -166,6 +168,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             //solver.spmv( pastix_data, PastixNoTrans, -1.0, d_x, 1.0, gmVi, streams);
             //solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
             if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 				/*cudaMemcpy(gmWi_host, x, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmWi_host, n );
 				cudaMemcpy(x, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
@@ -183,6 +186,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				cudaMemcpy(gmWi_host, gmVi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmWi_host, n );
 				cudaMemcpy(gmVi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);*/
+#endif
 			}
 			else{
 				solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
@@ -206,10 +210,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         tmp = (pastix_complex64_t)( 1.0 / resid );
         solver.scal( pastix_data, n, tmp, gmVi );
         
-        if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+        if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 			cudaMemcpy(gmG, &resid, sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
-		else
+#endif
+		}
+		else{
             gmG[0] = (pastix_complex64_t)resid;
+		}
             
         inflag = 1;
         i = -1;
@@ -233,9 +241,11 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             /* Compute w_{i} = M^{-1} v_{i} */
             if ( precond ) {
 				if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 					cudaMemcpy(gmWi_host, gmWi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 					solver.spsv( pastix_data, gmWi_host );
 					cudaMemcpy(gmWi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
+#endif
 				}
 				else
 					solver.spsv( pastix_data, gmWi );
@@ -249,6 +259,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             
             
             if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 				/*cudaMemcpy(gmWi_host, gmWi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmWi_host, n );
 				cudaMemcpy(gmWi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
@@ -266,6 +277,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				cudaMemcpy(gmWi_host, gmVi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmWi_host, n );
 				cudaMemcpy(gmVi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);*/
+#endif
 			}
 			else{
 				solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
@@ -278,10 +290,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
                 solver.dot( pastix_data, n, gmVi, gmV + j * n, ((pastix_complex64_t*)gmHi)+j );
                 
                 /* Compute v_{i+1} = v_{i+1} - h_{j,i} v_{j} */
-                if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+                if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 					cudaMemcpy(&tmp, gmHi + j, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
-				else
+#endif
+				}
+				else{
 					tmp = gmHi[j];
+				}
 					
                 solver.axpy( pastix_data, n, -tmp ,  gmV + j * n, gmVi );
                 
@@ -291,10 +307,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             /* Compute || v_{i+1} ||_f */
             norm = solver.norm( pastix_data, n, gmVi );
             
-            if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+            if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 				cudaMemcpy(gmHi+i+1, &norm, sizeof(double), cudaMemcpyHostToDevice);
-			else
+#endif
+			}
+			else{
 				gmHi[i+1] = norm;
+			}
            
 
             /* Compute v_{i+1} = v_{i+1} / h_{i+1,i} iff h_{i+1,i} is not too small */
@@ -307,6 +327,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
             
             /* Apply the previous Givens rotation to the new column (should call LAPACKE_zrot_work())*/
 			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 				cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
 				
 				for (j=0; j<i;j++)
@@ -333,6 +354,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
 				cublasZscal(*(pastix_data->cublas_handle), 1, &negone, gmG+i+1, 1);
 				cudaMemcpy(&tmp, gmG+i+1, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
+#endif
 			}
 			else{
 				for (j=0; j<i;j++)
@@ -379,10 +401,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         }
 
         /* Compute y_m = H_m^{-1} g_m (See p. 169) */
-        if(pastix_data->iparm[IPARM_GPU_NBR] > 0)
+        if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 			cublasZtrsv(*(pastix_data->cublas_handle), CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, i+1, gmH, im1, gmG, 1);
-		else
+#endif
+		}
+		else{
 			cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, i+1, gmH, im1, gmG, 1 );
+		}
 
         /**
          * Compute x_m = x_0 + M^{-1} V_m y_m
@@ -425,12 +451,14 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
     t3 = clockGet();
 
     if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA
 		tmp_ptr = b; b = d_b; d_b = tmp_ptr;
 		tmp_ptr = x; x = d_x; d_x = tmp_ptr;
 		cudaMemcpy(x, d_x, n * sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 		free(gmWi_host);
 		solver.free(d_b);
 		solver.free(d_x);
+#endif
 	}
 
     solver.output_final( pastix_data, resid_b, iters, t3, x, x );

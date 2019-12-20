@@ -93,7 +93,7 @@ static void fct_blok_ztrsmsp_gpu(void *descr[], void *cl_arg)
     gpublok_ztrsmsp( coef, side, uplo, trans, diag,
                      cblk, blok_m, A, C,
                      &(sopalin_data->solvmtx->lowrank),
-                     starpu_cuda_get_local_stream() );
+                     starpu_cuda_get_local_stream(), sopalin_data->cublas_handle);
 }
 #endif /* defined(PASTIX_WITH_CUDA) */
 #endif /* !defined(PASTIX_STARPU_SIMULATION) */
