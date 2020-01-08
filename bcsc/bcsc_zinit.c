@@ -19,6 +19,7 @@
 #include "spm.h"
 #include "solver.h"
 #include "bcsc.h"
+#include "common/cpp_sort.h"
 #include "bcsc_z.h"
 
 /**
@@ -67,6 +68,7 @@ bcsc_zinit_A( const spmatrix_t     *spm,
      * Initialize the values of the matrix A in the blocked csc format. This
      * applies the permutation to the values array.
      */
+     
     for (itercol=0; itercol<spm->gN; itercol++)
     {
         pastix_int_t *coltab;
@@ -88,7 +90,8 @@ bcsc_zinit_A( const spmatrix_t     *spm,
         {
             pastix_int_t iterrow  = spm->rowptr[i]-baseval;
             pastix_int_t iterrow2 = ord->permtab[iterrow] * dof;
-            ival = i * dof * dof;
+            
+            /*ival = i * dof * dof;
 
             for (idofcol = 0; idofcol < dof; idofcol++)
             {
@@ -105,7 +108,16 @@ bcsc_zinit_A( const spmatrix_t     *spm,
 
                 coltab[ colidx ] += dof;
                 assert( coltab[ colidx ] <= coltab[ colidx+1 ] );
-            }
+            }*/
+
+			pastix_int_t colidx = itercol2 + 0 - fcolnum;
+			pastix_int_t pos = coltab[ colidx ];
+
+			bcsc->rowtab[ pos ] = iterrow2;
+			Lvalues[ pos ] = values[ i ];
+			
+			coltab[ colidx ] ++;
+			//assert( coltab[ colidx ] <= coltab[ colidx+1 ] );
         }
     }
 }
@@ -417,31 +429,85 @@ bcsc_zinit_At( const spmatrix_t     *spm,
  *
  *******************************************************************************/
 static inline void
-bcsc_zsort( const pastix_bcsc_t *bcsc,
-            pastix_int_t        *rowtab,
-            pastix_complex64_t  *valtab )
+bcsc_zsort( pastix_bcsc_t *bcsc,
+            pastix_int_t        **rowtab,
+            pastix_complex64_t  **valtab,
+            pastix_int_t  		**sorttab)
 {
     bcsc_cblk_t *blockcol;
     pastix_int_t itercblk, itercol, size;
-    void *sortptr[2];
+    
+    pastix_complex64_t* permedValues;
+    pastix_int_t* permedRows;
+    
+	MALLOC_INTERN(permedValues, bcsc->numElements, pastix_complex64_t);
+	MALLOC_INTERN(permedRows, bcsc->numElements, pastix_int_t);
 
     blockcol = bcsc->cscftab;
+    
+    if(*sorttab == NULL){
+		MALLOC_INTERN(*sorttab, bcsc->numElements, pastix_int_t);
+		
+		for(int i = 0; i < bcsc->numElements; i++){
+			(*sorttab)[i] = i;
+		}
+		
+		for (itercblk=0; itercblk<bcsc->cscfnbr; itercblk++, blockcol++)
+		{
+			for (itercol=0; itercol<blockcol->colnbr; itercol++)
+			{
+				/*size = blockcol->coltab[itercol+1] - blockcol->coltab[itercol];
+				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+					printf("sortTab[%d] = %ld\n", i, (bcsc->sortTab)[i]);
+				}
+				printf("\n _______________ \n");
+				
+				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+					printf("rows[%d] = %ld\n", i, (*rowtab)[i]);
+				}
+				printf("\n _______________ \n");
+*/
+				cppSort( (*sorttab) + blockcol->coltab[itercol], (*sorttab) + blockcol->coltab[itercol+1], *rowtab );
+				/*
+				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+					printf("rows[%d] = %ld\n", i, permedRows[i]);
+				}
+				printf("\n _______________ \n");
+				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+					printf("sortTab[%d] = %ld\n", i, (bcsc->sortTab)[i]);
+				}
+				printf("\n\n\n");
+				
+				if(itercol == 1)
+					exit(0);*/
+			}
+		}
+	}
+      
+    for(int i = 0; i < bcsc->numElements; i++){
+		permedValues[i] = (*valtab)[(*sorttab)[i]];
+		permedRows[i] = (*rowtab)[(*sorttab)[i]];
+	}
+    
+    memFree_null(*rowtab);
+    memFree_null(*valtab);
+    
+    *rowtab = permedRows;
+    *valtab = permedValues;
+    
+   /* blockcol = bcsc->cscftab;
     for (itercblk=0; itercblk<bcsc->cscfnbr; itercblk++, blockcol++)
     {
         for (itercol=0; itercol<blockcol->colnbr; itercol++)
-        {
-            int i;
-            sortptr[0] = (void*)(rowtab + blockcol->coltab[itercol]);
-            sortptr[1] = (void*)(valtab + blockcol->coltab[itercol]);
-
-            size = blockcol->coltab[itercol+1] - blockcol->coltab[itercol];
-            for (i=0; i<size; i++) {
-                assert( rowtab[ blockcol->coltab[itercol] + i ] != -1);
-            }
-
-            z_qsortIntFloatAsc( sortptr, size );
+        {            
+            for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+				printf("row[%d] = %ld\n", i, (*rowtab)[i]);
+			}
+			printf("\n\n\n");
+			if(itercol == 1)
+				exit(0);
         }
-    }
+    }*/
 }
 
 /**
@@ -484,12 +550,16 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
     pastix_int_t valuesize;
 
     bcsc->flttype = spm->flttype;
-    valuesize = bcsc_init_centralized_coltab( spm, ord, solvmtx, bcsc );
-
+    if(!bcsc->cscftab)
+		valuesize = bcsc_init_centralized_coltab( spm, ord, solvmtx, bcsc );
+	else
+		valuesize = bcsc->numElements;
+		
     /**
      * Initialize the blocked structure of the matrix A
      */
     bcsc_zinit_A( spm, ord, solvmtx, col2cblk, bcsc );
+	
     if ( spm->mtxtype == SpmSymmetric ) {
         bcsc_zinit_Lt( spm, ord, solvmtx, col2cblk, bcsc );
     }
@@ -503,13 +573,14 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
     bcsc_restore_coltab( bcsc );
 
     /* Sort the csc */
-    bcsc_zsort( bcsc, bcsc->rowtab, bcsc->Lvalues );
+    bcsc_zsort( bcsc, &(bcsc->rowtab), &(bcsc->Lvalues), &(bcsc->sorttabA) );
 
     if ( spm->mtxtype == SpmGeneral ) {
 	/* A^t is not required if only refinement is performed */
         if (initAt) {
             pastix_int_t *trowtab, i;
-            MALLOC_INTERN( bcsc->Uvalues, valuesize * pastix_size_of( bcsc->flttype ), char );
+            if(!bcsc->Uvalues)
+				MALLOC_INTERN( bcsc->Uvalues, valuesize * pastix_size_of( bcsc->flttype ), char );
             MALLOC_INTERN( trowtab, valuesize, pastix_int_t);
 
             for (i=0; i<valuesize; i++) {
@@ -522,7 +593,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
             bcsc_restore_coltab( bcsc );
 
 	    /* Sort the transposed csc */
-	    bcsc_zsort( bcsc, trowtab, bcsc->Uvalues );
+	    bcsc_zsort( bcsc, &trowtab, &(bcsc->Uvalues), &(bcsc->sorttabAt) );
 	    memFree( trowtab );
         }
     }

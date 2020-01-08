@@ -165,5 +165,7 @@ int  pastixGetDiag( const pastix_data_t *pastix_data,
 void pastixGetOptions( int argc, char **argv,
                         pastix_int_t *iparm, double *dparm,
                         int *check, spm_driver_t *driver, char **filename );
+                        
+void pastixResetSteps(pastix_data_t *pastix_data);
 
 #endif /* _pastix_h_ */

@@ -44,6 +44,9 @@ struct pastix_bcsc_s {
     pastix_int_t *rowtab;  /**< Array of rows in the matrix.                                                   */
     void         *Lvalues; /**< Array of values of the matrix A                                                */
     void         *Uvalues; /**< Array of values of the matrix A^t                                              */
+    pastix_int_t *col2cblk;
+    pastix_int_t *sorttabA;
+    pastix_int_t *sorttabAt;
 };
 
 double bcscInit( const spmatrix_t     *spm,

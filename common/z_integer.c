@@ -87,7 +87,7 @@
      Nothing
 
 */
-
+/*
 static size_t intsortsize[2] = { sizeof(pastix_int_t), sizeof(pastix_complex64_t) };
 #define INTSORTNAME            z_qsortIntFloatAsc
 #define INTSORTSIZE(x)         (intsortsize[x])
@@ -97,13 +97,13 @@ static size_t intsortsize[2] = { sizeof(pastix_int_t), sizeof(pastix_complex64_t
     long    disp_p   = (((pastix_int_t*)p)-((pastix_int_t*)base_ptr));			\
     long    disp_q   = (((pastix_int_t*)q)-((pastix_int_t*)base_ptr));			\
     pastix_complex64_t * floatptr = *(pbase+1);					\
-    pastix_complex64_t   f;								\
+    pastix_complex64_t   f;								\*/
     /* swap integers */							\
-    t = *((pastix_int_t *) (p));							\
+  /*  t = *((pastix_int_t *) (p));							\
     *((pastix_int_t *) (p)) = *((pastix_int_t *) (q));					\
-    *((pastix_int_t *) (q)) = t;							\
+    *((pastix_int_t *) (q)) = t;							\*/
     /* swap corresponding values */					\
-    f = floatptr[disp_p];						\
+   /* f = floatptr[disp_p];						\
     floatptr[disp_p] = floatptr[disp_q];				\
     floatptr[disp_q] = f;						\
   } while (0)
@@ -114,4 +114,7 @@ static size_t intsortsize[2] = { sizeof(pastix_int_t), sizeof(pastix_complex64_t
 #undef INTSORTSWAP
 #undef INTSORTCMP
 #undef INTSORTNTAB
+
+*/
+
 

@@ -290,13 +290,14 @@ bcsc_init_centralized( const spmatrix_t     *spm,
      * Initialize the col2cblk array. col2cblk[i] contains the cblk index of the
      * i-th column. col2cblk[i] = -1 if not local.
      */
+	if(!bcsc->col2cblk)
     {
         SolverCblk *cblk = solvmtx->cblktab;
 
-        MALLOC_INTERN( col2cblk, eltnbr, pastix_int_t );
+        MALLOC_INTERN( bcsc->col2cblk, eltnbr, pastix_int_t );
         for (itercol=0; itercol<eltnbr; itercol++)
         {
-            col2cblk[itercol] = -1;
+            bcsc->col2cblk[itercol] = -1;
         }
 
         for (itercblk=0; itercblk<cblknbr; itercblk++, cblk++)
@@ -305,7 +306,7 @@ bcsc_init_centralized( const spmatrix_t     *spm,
                  itercol <= cblk->lcolnum;
                  itercol++ )
             {
-                col2cblk[itercol] = itercblk;
+                bcsc->col2cblk[itercol] = itercblk;
             }
         }
     }
@@ -317,23 +318,21 @@ bcsc_init_centralized( const spmatrix_t     *spm,
      */
     switch( spm->flttype ) {
     case SpmFloat:
-        bcsc_sinit_centralized( spm, ord, solvmtx, col2cblk, initAt, bcsc );
+        bcsc_sinit_centralized( spm, ord, solvmtx, bcsc->col2cblk, initAt, bcsc );
         break;
     case SpmDouble:
-        bcsc_dinit_centralized( spm, ord, solvmtx, col2cblk, initAt, bcsc );
+        bcsc_dinit_centralized( spm, ord, solvmtx, bcsc->col2cblk, initAt, bcsc );
         break;
     case SpmComplex32:
-        bcsc_cinit_centralized( spm, ord, solvmtx, col2cblk, initAt, bcsc );
+        bcsc_cinit_centralized( spm, ord, solvmtx, bcsc->col2cblk, initAt, bcsc );
         break;
     case SpmComplex64:
-        bcsc_zinit_centralized( spm, ord, solvmtx, col2cblk, initAt, bcsc );
+        bcsc_zinit_centralized( spm, ord, solvmtx, bcsc->col2cblk, initAt, bcsc );
         break;
     case SpmPattern:
     default:
         fprintf(stderr, "bcsc_init_centralized: Error unknown floating type for input spm\n");
     }
-
-    memFree_null(col2cblk);
 }
 
 /**
@@ -427,6 +426,14 @@ bcscExit( pastix_bcsc_t *bcsc )
     }
 
     memFree_null( bcsc->Lvalues );
+    memFree_null( bcsc->col2cblk );
+    
+    if ( bcsc->sorttabA != NULL ) {
+		memFree_null( bcsc->sorttabA );
+    }
+    if ( bcsc->sorttabAt != NULL ) {
+		memFree_null( bcsc->sorttabAt );
+    }
 }
 
 /*

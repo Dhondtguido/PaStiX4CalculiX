@@ -735,6 +735,7 @@ set(PASTIX_LIB_SRCS
   common/integer.c
   common/isched.c
   common/models.c
+  common/cpp_sort.cpp
   common/get_options.c
   #
   bcsc/bcsc.c

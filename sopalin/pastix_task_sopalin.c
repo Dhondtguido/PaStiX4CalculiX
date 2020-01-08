@@ -158,13 +158,12 @@ pastix_subtask_spm2bcsc( pastix_data_t *pastix_data,
      * Fill in the internal blocked CSC. We consider that if this step is called
      * the spm values have changed so we need to update the blocked csc.
      */
-    if (pastix_data->bcsc != NULL)
+    if (pastix_data->bcsc == NULL)
     {
-        bcscExit( pastix_data->bcsc );
-        memFree_null( pastix_data->bcsc );
-    }
+		MALLOC_INTERN( pastix_data->bcsc, 1, pastix_bcsc_t );
+		memset(pastix_data->bcsc, 0, sizeof(pastix_bcsc_t));
+	}
 
-    MALLOC_INTERN( pastix_data->bcsc, 1, pastix_bcsc_t );
 
     time = bcscInit( spm,
                      pastix_data->ordemesh,
@@ -621,4 +620,18 @@ pastix_task_numfact( pastix_data_t *pastix_data,
 
 
     return EXIT_SUCCESS;
+}
+
+void pastixResetSteps(pastix_data_t *pastix_data){
+
+    pastix_data->steps |= ( STEP_INIT |
+							STEP_ORDERING |
+                            STEP_SYMBFACT |
+                            STEP_ANALYSE );
+                            
+	pastix_data->steps &= ~( STEP_CSC2BCSC |
+							 STEP_BCSC2CTAB |
+                             STEP_SOLVE |
+                             STEP_REFINE |
+                             STEP_NUMFACT);
 }
