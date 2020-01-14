@@ -73,7 +73,7 @@ pastix_parsec_init( pastix_data_t *pastix,
     iparm[IPARM_GPU_NBR] = 0;
 #endif
 
-  /*  if (iparm[IPARM_GPU_NBR] >= 0) {
+    if (iparm[IPARM_GPU_NBR] >= 0) {
 #if defined(PASTIX_GENERATE_MODEL)
         pastix_print( pastix->procnum, 0,
                       "WARNING: PaStiX compiled with -DPASTIX_GENERATE_MODEL forces:\n"
@@ -104,7 +104,7 @@ pastix_parsec_init( pastix_data_t *pastix,
         }
 
         free(value);
-    }*/
+    }
 
     if ( bindtab != NULL ) {
         char *valtmp;
