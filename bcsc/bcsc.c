@@ -268,7 +268,7 @@ bcsc_init_centralized_coltab( const spmatrix_t     *spm,
  *
  *******************************************************************************/
 void
-bcsc_init_centralized( const spmatrix_t     *spm,
+bcsc_init_centralized(       spmatrix_t     *spm,
                        const pastix_order_t *ord,
                        const SolverMatrix   *solvmtx,
                              pastix_int_t    initAt,
@@ -310,13 +310,22 @@ bcsc_init_centralized( const spmatrix_t     *spm,
             }
         }
     }
+    
+    pastix_int_t valuesize;
+
+    bcsc->flttype = spm->flttype;
+    
+    if(!bcsc->cscftab)
+		valuesize = bcsc_init_centralized_coltab( spm, ord, solvmtx, bcsc );
+	else
+		valuesize = bcsc->numElements;
 
     /*
      * Fill in the lower triangular part of the blocked csc with values and
      * rows. The upper triangular part is done later if required through LU
      * factorization.
      */
-    switch( spm->flttype ) {
+   /* switch( spm->flttype ) {
     case SpmFloat:
         bcsc_sinit_centralized( spm, ord, solvmtx, bcsc->col2cblk, initAt, bcsc );
         break;
@@ -332,8 +341,68 @@ bcsc_init_centralized( const spmatrix_t     *spm,
     case SpmPattern:
     default:
         fprintf(stderr, "bcsc_init_centralized: Error unknown floating type for input spm\n");
-    }
+    }*/
+    
+	double* buffer = (double*) malloc(sizeof(double) * spm->nnz);
+		
+	pastix_int_t* perm = ord->permtab;
+	pastix_int_t* peri = ord->peritab;
+	if(spm->colptrPERM != NULL)
+		free(spm->colptrPERM);
+	if(spm->rowptrPERM != NULL)
+		free(spm->rowptrPERM);
+		
+	spm->colptrPERM = (pastix_int_t*) malloc((spm->n+1) * sizeof(pastix_int_t));
+	spm->rowptrPERM = (pastix_int_t*) malloc((spm->nnzexp) * sizeof(pastix_int_t));
+	
+	permute_d_Matrix(spm->n, spm->colptr, spm->rowptr, (double*) spm->values, perm, peri, spm->colptrPERM, spm->rowptrPERM, buffer);
+
+	bcsc_dsort(bcsc, &(spm->rowptrPERM), &buffer, &(bcsc->sorttab));
+		
+	if ( bcsc->flttype == PastixFloat) {
+		for(pastix_int_t i = 0; i < spm->nnz; i++){
+			((float*) bcsc->Lvalues)[i] = (float) buffer[i];
+		}
+	}
+	else{
+		memcpy(bcsc->Lvalues, buffer, spm->nnz * sizeof(double));
+	}
+
+	if( spm->mtxtype == SpmGeneral )
+		transpose_d_Matrix(spm->n, spm->colptrPERM, spm->rowptrPERM, buffer, (double*) spm->values);
+	else
+		memcpy( spm->values, buffer, sizeof(spm->nnz) * sizeof(double));
+
+	if(initAt){
+		if ( spm->mtxtype == SpmGeneral ) {
+			if(!bcsc->Uvalues)
+				MALLOC_INTERN( bcsc->Uvalues, valuesize * pastix_size_of( bcsc->flttype ), char );
+				
+			if ( bcsc->flttype == PastixFloat) {
+				for(pastix_int_t i = 0; i < spm->nnz; i++){
+					((float*) bcsc->Uvalues)[i] = (float) ((double*) spm->values)[i];
+				}
+			}
+			else{
+				memcpy(bcsc->Uvalues, spm->values, spm->nnz * sizeof(double));
+			}
+			
+		}
+		else {
+			bcsc->Uvalues = bcsc->Lvalues;
+		}
+	}
+	
+	for(pastix_int_t i = 0; i < spm->nnz; i++){
+		bcsc->rowtab[i] = spm->rowptrPERM[i]-1;
+	}
+	
+	free(buffer);
+
+    
+    
 }
+
 
 /**
  *******************************************************************************
@@ -369,7 +438,7 @@ bcsc_init_centralized( const spmatrix_t     *spm,
  *
  *******************************************************************************/
 double
-bcscInit( const spmatrix_t     *spm,
+bcscInit(       spmatrix_t     *spm,
           const pastix_order_t *ord,
           const SolverMatrix   *solvmtx,
                 pastix_int_t    initAt,
@@ -428,11 +497,8 @@ bcscExit( pastix_bcsc_t *bcsc )
     memFree_null( bcsc->Lvalues );
     memFree_null( bcsc->col2cblk );
     
-    if ( bcsc->sorttabA != NULL ) {
-		memFree_null( bcsc->sorttabA );
-    }
-    if ( bcsc->sorttabAt != NULL ) {
-		memFree_null( bcsc->sorttabAt );
+    if ( bcsc->sorttab != NULL ) {
+		memFree_null( bcsc->sorttab );
     }
 }
 

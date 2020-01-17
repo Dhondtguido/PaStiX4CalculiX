@@ -147,7 +147,6 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
 #ifdef PASTIX_WITH_CUDA
 		solver->spmv = &bcsc_zspmv;
 		solver->unblocked_spmv = &gpu_z_spmv;
-		solver->unblocked_spmv_perm = &gpu_z_spmv_perm;
         solver->copy = &bvec_zcopy_cuda;
         solver->dot  = &bvec_zdotc_cuda;
         solver->axpy = &bvec_zaxpy_cuda;
@@ -159,7 +158,6 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
     else if ( sched == PastixSchedSequential ) {
         solver->spmv = &bcsc_zspmv;
 		solver->unblocked_spmv = &cpu_z_spmv;
-		solver->unblocked_spmv_perm = &cpu_z_spmv_perm;
         solver->copy = &bvec_zcopy_seq;
         solver->dot  = &bvec_zdotc_seq;
         solver->axpy = &bvec_zaxpy_seq;
@@ -169,7 +167,6 @@ void z_refine_init( struct z_solver *solver, pastix_data_t *pastix_data )
     } else {
         solver->spmv = &bcsc_zspmv;
 		solver->unblocked_spmv = &cpu_z_spmv;
-		solver->unblocked_spmv_perm = &cpu_z_spmv_perm;
         solver->copy = &bvec_zcopy_smp;
         solver->dot  = &bvec_zdotc_smp;
         solver->axpy = &bvec_zaxpy_smp;

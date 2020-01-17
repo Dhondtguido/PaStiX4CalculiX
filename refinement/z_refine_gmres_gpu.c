@@ -177,7 +177,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmWi_host, n );
 				cudaMemcpy(gmVi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
 				*/
-				solver.unblocked_spmv_perm( n, -1., 1., spm->valuesDouble, x, gmVi, spm->colptr, spm->rowptr, pastix_data->ordemesh->permtab );
+				solver.unblocked_spmv( n, -1., 1., spm->valuesGPU, x, gmVi, spm->colptrGPU, spm->rowptrGPU);
             
 				/*cudaMemcpy(gmWi_host, x, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmWi_host, n );
@@ -268,7 +268,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirBackward, n, 1, gmWi_host, n );
 				cudaMemcpy(gmVi, gmWi_host, n *  sizeof(pastix_complex64_t), cudaMemcpyHostToDevice);
 				*/
-				solver.unblocked_spmv_perm( n, 1.0, 0., spm->valuesDouble, gmWi, gmVi, spm->colptr, spm->rowptr, pastix_data->ordemesh->permtab);
+				solver.unblocked_spmv( n, 1.0, 0., spm->valuesGPU, gmWi, gmVi, spm->colptrGPU, spm->rowptrGPU);
             /*
 				cudaMemcpy(gmWi_host, gmWi, n *  sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 				pastix_subtask_applyorder( pastix_data, PastixDouble, PastixDirForward, n, 1, gmWi_host, n );

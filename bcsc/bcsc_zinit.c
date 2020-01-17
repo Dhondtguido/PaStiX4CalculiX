@@ -22,6 +22,49 @@
 #include "common/cpp_sort.h"
 #include "bcsc_z.h"
 
+void transpose_z_Matrix(pastix_int_t 		n,
+						pastix_int_t* 		colptrIn, 
+						pastix_int_t* 		rowptrIn, 
+						cuDoubleComplex*	valuesIn, 
+						cuDoubleComplex* 	valuesOut){
+	
+	pastix_int_t* temp = (pastix_int_t*) calloc(n, sizeof(pastix_int_t));
+	
+	for(int i = 0; i < n; i++){
+		for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+			pastix_int_t target = colptrIn[rowptrIn[j]-1]-1 + (temp[rowptrIn[j]-1]++);
+			valuesOut[target] = valuesIn[j];
+		}
+	}
+	
+	free(temp);
+}
+
+void permute_z_Matrix(pastix_int_t		n,
+					  pastix_int_t* 	colptrIn,
+					  pastix_int_t* 	rowptrIn, 
+					  cuDoubleComplex* 	valuesIn, 
+					  pastix_int_t* 	perm, 
+					  pastix_int_t* 	peri, 
+					  pastix_int_t* 	colptrOut, 
+					  pastix_int_t* 	rowptrOut, 
+					  cuDoubleComplex*  valuesOut){
+	
+	colptrOut[0] = 1;
+	for(pastix_int_t i = 0; i < n; i++){
+		colptrOut[i+1] = colptrOut[i] + colptrIn[peri[i]+1] - colptrIn[peri[i]];
+	}
+	
+	for(pastix_int_t i = 0; i < n; i++){
+		for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+			pastix_int_t target = colptrOut[perm[i]] - 1 + j - colptrIn[i] + 1;
+			
+			rowptrOut[target] = perm[rowptrIn[j]-1] + 1;
+			valuesOut[target] = valuesIn[j];
+		}
+	}
+}
+
 /**
  *******************************************************************************
  *
@@ -428,8 +471,8 @@ bcsc_zinit_At( const spmatrix_t     *spm,
  *          block csc.
  *
  *******************************************************************************/
-static inline void
-bcsc_zsort( pastix_bcsc_t *bcsc,
+
+void bcsc_zsort( pastix_bcsc_t *bcsc,
             pastix_int_t        **rowtab,
             pastix_complex64_t  **valtab,
             pastix_int_t  		**sorttab)
@@ -546,15 +589,8 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
                         const pastix_int_t   *col2cblk,
                               int             initAt,
                               pastix_bcsc_t  *bcsc )
-{
-    pastix_int_t valuesize;
-
-    bcsc->flttype = spm->flttype;
-    if(!bcsc->cscftab)
-		valuesize = bcsc_init_centralized_coltab( spm, ord, solvmtx, bcsc );
-	else
-		valuesize = bcsc->numElements;
-		
+{		
+	pastix_int_t valuesize = bcsc->numElements;
     /**
      * Initialize the blocked structure of the matrix A
      */
@@ -573,7 +609,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
     bcsc_restore_coltab( bcsc );
 
     /* Sort the csc */
-    bcsc_zsort( bcsc, &(bcsc->rowtab), &(bcsc->Lvalues), &(bcsc->sorttabA) );
+    bcsc_zsort( bcsc, &(bcsc->rowtab), &(bcsc->Lvalues), &(bcsc->sorttab) );
 
     if ( spm->mtxtype == SpmGeneral ) {
 	/* A^t is not required if only refinement is performed */
@@ -593,7 +629,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
             bcsc_restore_coltab( bcsc );
 
 	    /* Sort the transposed csc */
-	    bcsc_zsort( bcsc, &trowtab, &(bcsc->Uvalues), &(bcsc->sorttabAt) );
+	    bcsc_zsort( bcsc, &trowtab, &(bcsc->Uvalues), &(bcsc->sorttab) );
 	    memFree( trowtab );
         }
     }

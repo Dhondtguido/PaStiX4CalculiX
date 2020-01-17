@@ -24,6 +24,7 @@
 #include "s_spm.h"
 #include "p_spm.h"
 
+#include <cuda_runtime.h>
 #include <cblas.h>
 #include <lapacke.h>
 
@@ -112,7 +113,13 @@ spmInit( spmatrix_t *spm )
     spm->rowptr   = NULL;
     spm->loc2glob = NULL;
     spm->values   = NULL;
-    spm->valuesDouble   = NULL;
+    
+    spm->colptrPERM   = NULL;
+    spm->rowptrPERM   = NULL;
+    
+    spm->colptrGPU   = NULL;
+    spm->rowptrGPU   = NULL;
+    spm->valuesGPU   = NULL;
 }
 
 /**
@@ -241,8 +248,6 @@ spmAlloc( spmatrix_t *spm )
     }
     valsize = valsize * spm_size_of( spm->flttype );
     spm->values = malloc(valsize);
-    if(spm->flttype == SpmFloat)
-		spm->valuesDouble = malloc(valsize * sizeof(double));
 }
 
 /**
@@ -275,14 +280,30 @@ spmExit( spmatrix_t *spm )
         free(spm->values);
         spm->values = NULL;
     }
-    if(spm->valuesDouble != NULL) {
-        free(spm->valuesDouble); 
-        spm->valuesDouble = NULL;
-    }
     if(spm->dofs != NULL) {
         free(spm->dofs);
         spm->dofs = NULL;
     }
+    if(spm->colptrGPU != NULL) {
+        cudaFree(spm->colptrGPU);
+        spm->colptrGPU = NULL;
+    }
+    if(spm->rowptrGPU != NULL) {
+        cudaFree(spm->rowptrGPU);
+        spm->rowptrGPU = NULL;
+    }
+    if(spm->valuesGPU != NULL) {
+        cudaFree(spm->valuesGPU);
+        spm->valuesGPU = NULL;
+	}
+    if(spm->colptrPERM != NULL) {
+        cudaFree(spm->colptrPERM);
+        spm->colptrPERM = NULL;
+	}
+    if(spm->rowptrPERM != NULL) {
+        cudaFree(spm->rowptrPERM);
+        spm->rowptrPERM = NULL;
+	}
 }
 
 /**
@@ -884,10 +905,6 @@ spmCopy( const spmatrix_t *spm )
         valsize = valsize * spm_size_of( spm->flttype );
         newspm->values = malloc(valsize);
         memcpy( newspm->values, spm->values, valsize );
-    }
-    if(spm->valuesDouble != NULL) {
-        newspm->valuesDouble = malloc(2 * valsize);
-        memcpy( newspm->valuesDouble, spm->valuesDouble, 2 * valsize );
     }
 
     return newspm;

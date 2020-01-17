@@ -595,6 +595,21 @@ pastix_task_numfact( pastix_data_t *pastix_data,
             return rc;
         }
     }
+    
+	if(spm->valuesGPU == NULL){
+		cudaMalloc((void**) &(spm->valuesGPU), spm->nnzexp * sizeof(double));
+	}
+	cudaMemcpyAsync(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+	
+	if(spm->colptrGPU == NULL){
+		cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
+		cudaMemcpyAsync(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+	}
+	
+	if(spm->rowptrGPU == NULL){
+		cudaMalloc((void**) &(spm->rowptrGPU), spm->nnzexp * sizeof(pastix_int_t));
+		cudaMemcpyAsync(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+	}
 
     if ( !(pastix_data->steps & STEP_BCSC2CTAB) ) {
         rc = pastix_subtask_bcsc2ctab( pastix_data );

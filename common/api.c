@@ -372,7 +372,7 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 70;
     iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 32 * 1024;
 
     /* Compression */
@@ -608,6 +608,7 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
 			printf ("CUBLAS initialization failed\n");
 		}
 #endif
+		cudaStreamCreate(&(pastix->streamGPU));
 	}
 	else
 	{

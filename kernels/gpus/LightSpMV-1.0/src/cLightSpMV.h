@@ -4,7 +4,7 @@
 #define EXTERNC
 #endif
 
-EXTERNC void createLightSpMV(int64_t m, int64_t nnz);
+EXTERNC void createLightSpMV(int64_t m, int64_t nnz, int64_t* drowptr, int64_t* dcolind, double* dvalues);
 EXTERNC void performLightLsMV(
     double alpha,
     double* dval,

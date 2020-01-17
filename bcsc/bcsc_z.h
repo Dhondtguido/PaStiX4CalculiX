@@ -16,6 +16,24 @@
 #ifndef _bcsc_z_h_
 #define _bcsc_z_h_
 
+
+
+void transpose_z_Matrix(pastix_int_t 		n,
+						pastix_int_t* 		colptrIn, 
+						pastix_int_t* 		rowptrIn, 
+						cuDoubleComplex*	valuesIn, 
+						cuDoubleComplex* 	valuesOut);
+
+void permute_z_Matrix(pastix_int_t		n,
+					  pastix_int_t* 	colptrIn,
+					  pastix_int_t* 	rowptrIn, 
+					  cuDoubleComplex* 	valuesIn, 
+					  pastix_int_t* 	perm, 
+					  pastix_int_t* 	peri, 
+					  pastix_int_t* 	colptrOut, 
+					  pastix_int_t* 	rowptrOut, 
+					  cuDoubleComplex*  valuesOut);
+					  
 /**
  * @addtogroup bcsc_internal
  * @{
@@ -29,6 +47,12 @@ void bcsc_zinit_centralized( const spmatrix_t     *spm,
                              const pastix_int_t   *col2cblk,
                                    int             initAt,
                                    pastix_bcsc_t  *bcsc );
+                                   
+void bcsc_zsort( pastix_bcsc_t *bcsc,
+            pastix_int_t        **rowtab,
+            pastix_complex64_t  **valtab,
+            pastix_int_t  		**sorttab);
+            
 /**
  *   @}
  * @}

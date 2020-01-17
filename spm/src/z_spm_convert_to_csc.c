@@ -81,7 +81,6 @@ z_spmConvertIJV2CSC( spmatrix_t *spm )
 
     oldspm.rowptr = NULL;
     oldspm.values = NULL;
-    oldspm.valuesDouble = NULL;
     spmExit( &oldspm );
 
     spm->fmttype = SpmCSC;

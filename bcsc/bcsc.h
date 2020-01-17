@@ -45,11 +45,10 @@ struct pastix_bcsc_s {
     void         *Lvalues; /**< Array of values of the matrix A                                                */
     void         *Uvalues; /**< Array of values of the matrix A^t                                              */
     pastix_int_t *col2cblk;
-    pastix_int_t *sorttabA;
-    pastix_int_t *sorttabAt;
+    pastix_int_t *sorttab;
 };
 
-double bcscInit( const spmatrix_t     *spm,
+double bcscInit(       spmatrix_t     *spm,
                  const pastix_order_t *ord,
                  const SolverMatrix   *solvmtx,
                  pastix_int_t          initAt,
@@ -70,7 +69,7 @@ bcsc_init_centralized_coltab( const spmatrix_t     *spm,
                                     pastix_bcsc_t  *bcsc );
 
 void
-bcsc_init_centralized( const spmatrix_t     *spm,
+bcsc_init_centralized(       spmatrix_t     *spm,
                        const pastix_order_t *ord,
                        const SolverMatrix   *solvmtx,
                              pastix_int_t    initAt,

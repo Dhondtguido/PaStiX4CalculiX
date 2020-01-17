@@ -69,6 +69,17 @@ void gpu_zgemmsp_fermi( const SolverMatrix *solvmatr,
                         const cuDoubleComplex *B,
                         cuDoubleComplex *C,
                         cudaStream_t stream);
+#ifdef __cplusplus
+extern "C" {
+#endif               
+void pastix_prep_spmGPU(pastix_data_t *pastix_data,
+					    pastix_int_t   n,
+					    spmatrix_t*    spm );
+
+
+#ifdef __cplusplus
+}
+#endif
 
 /**
  *    @}

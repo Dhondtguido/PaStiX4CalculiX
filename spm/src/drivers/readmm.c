@@ -139,19 +139,17 @@ s_readMM( FILE *file,
     spm_int_t *rowptr;
     spm_int_t i;
     long row, col;
-    double re;
+    float re;
 
     spm->values = malloc( spm->nnz * sizeof(float) );
-    spm->valuesDouble = malloc( spm->nnz * sizeof(double) );
 
     colptr = spm->colptr;
     rowptr = spm->rowptr;
     valptr = (float*)(spm->values);
-    valptrDouble = (double*)(spm->valuesDouble);
 
     for (i=0; i<spm->nnz; i++, colptr++, rowptr++, valptr++, valptrDouble++)
     {
-        if (3 != fscanf(file,"%ld %ld %lg\n", &row, &col, &re))
+        if (3 != fscanf(file,"%ld %ld %g\n", &row, &col, &re))
         {
             fprintf(stderr, "readmm: erro while reading matrix file (line %ld)\n", (long)i);
             return SPM_ERR_IO;
@@ -159,8 +157,7 @@ s_readMM( FILE *file,
 
         *rowptr = (spm_int_t)row;
         *colptr = (spm_int_t)col;
-        *valptrDouble = re;
-        *valptr = (float) re;
+        *valptr = re;
     }
 
     return SPM_SUCCESS;
