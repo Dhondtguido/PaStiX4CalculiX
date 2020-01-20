@@ -22,6 +22,7 @@
 #include "bcsc_c.h"
 #include "bcsc_d.h"
 #include "bcsc_s.h"
+#include <sched.h>
 
 /**
  *******************************************************************************
@@ -286,6 +287,20 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 
     assert( spm->loc2glob == NULL );
 
+
+    
+    cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(0, &mask);
+	CPU_SET(1, &mask);
+	CPU_SET(2, &mask);
+	CPU_SET(3, &mask);
+	CPU_SET(4, &mask);
+	CPU_SET(5, &mask);
+	CPU_SET(6, &mask);
+	CPU_SET(7, &mask);
+	sched_setaffinity(0, sizeof(mask), &mask);
+
     /*
      * Initialize the col2cblk array. col2cblk[i] contains the cblk index of the
      * i-th column. col2cblk[i] = -1 if not local.
@@ -343,6 +358,8 @@ bcsc_init_centralized(       spmatrix_t     *spm,
         fprintf(stderr, "bcsc_init_centralized: Error unknown floating type for input spm\n");
     }*/
     
+    
+    
 	double* buffer = (double*) malloc(sizeof(double) * spm->nnz);
 		
 	pastix_int_t* perm = ord->permtab;
@@ -357,9 +374,11 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 	
 	permute_d_Matrix(spm->n, spm->colptr, spm->rowptr, (double*) spm->values, perm, peri, spm->colptrPERM, spm->rowptrPERM, buffer);
 
+
 	bcsc_dsort(bcsc, &(spm->rowptrPERM), &buffer, &(bcsc->sorttab));
 		
 	if ( bcsc->flttype == PastixFloat) {
+		#pragma omp parallel for
 		for(pastix_int_t i = 0; i < spm->nnz; i++){
 			((float*) bcsc->Lvalues)[i] = (float) buffer[i];
 		}
@@ -379,6 +398,7 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 				MALLOC_INTERN( bcsc->Uvalues, valuesize * pastix_size_of( bcsc->flttype ), char );
 				
 			if ( bcsc->flttype == PastixFloat) {
+				#pragma omp parallel for
 				for(pastix_int_t i = 0; i < spm->nnz; i++){
 					((float*) bcsc->Uvalues)[i] = (float) ((double*) spm->values)[i];
 				}
@@ -393,6 +413,7 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 		}
 	}
 	
+	#pragma omp parallel for
 	for(pastix_int_t i = 0; i < spm->nnz; i++){
 		bcsc->rowtab[i] = spm->rowptrPERM[i]-1;
 	}

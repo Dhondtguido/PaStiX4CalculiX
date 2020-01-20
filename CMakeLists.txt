@@ -45,10 +45,10 @@ include(CheckSystem)
 
 # Set the RPATH config
 # --------------------
-SET(CMAKE_EXE_LINKER_FLAGS " -lstdc++ -fopenmp ")
+SET(CMAKE_EXE_LINKER_FLAGS " -lstdc++ -fopenmp -D_GNU_SOURCE ")
 SET(CMAKE_C_FLAGS $ENV{SCRIPT_OUT})
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -fopenmp -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/include ")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/targets/x86_64-linux/include ")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -fopenmp -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/include -D_GNU_SOURCE ")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/targets/x86_64-linux/include -D_GNU_SOURCE ")
 
 
 # use, i.e. don't skip the full RPATH for the build tree

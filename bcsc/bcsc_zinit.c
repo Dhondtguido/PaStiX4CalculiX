@@ -55,6 +55,7 @@ void permute_z_Matrix(pastix_int_t		n,
 		colptrOut[i+1] = colptrOut[i] + colptrIn[peri[i]+1] - colptrIn[peri[i]];
 	}
 	
+	#pragma omp parallel for
 	for(pastix_int_t i = 0; i < n; i++){
 		for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
 			pastix_int_t target = colptrOut[perm[i]] - 1 + j - colptrIn[i] + 1;
@@ -491,12 +492,14 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
     if(*sorttab == NULL){
 		MALLOC_INTERN(*sorttab, bcsc->numElements, pastix_int_t);
 		
+		#pragma omp parallel for
 		for(int i = 0; i < bcsc->numElements; i++){
 			(*sorttab)[i] = i;
 		}
 		
 		for (itercblk=0; itercblk<bcsc->cscfnbr; itercblk++, blockcol++)
 		{
+			#pragma omp parallel for
 			for (itercol=0; itercol<blockcol->colnbr; itercol++)
 			{
 				/*size = blockcol->coltab[itercol+1] - blockcol->coltab[itercol];
@@ -526,7 +529,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 			}
 		}
 	}
-      
+    #pragma omp parallel for
     for(int i = 0; i < bcsc->numElements; i++){
 		permedValues[i] = (*valtab)[(*sorttab)[i]];
 		permedRows[i] = (*rowtab)[(*sorttab)[i]];
