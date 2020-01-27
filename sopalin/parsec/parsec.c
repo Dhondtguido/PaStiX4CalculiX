@@ -17,9 +17,6 @@
  * @{
  *
  **/
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 #include "common.h"
 #if !defined(PASTIX_WITH_PARSEC)
 #error "This file should not be compiled if PaRSEC is not enabled"

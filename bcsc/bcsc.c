@@ -22,7 +22,6 @@
 #include "bcsc_c.h"
 #include "bcsc_d.h"
 #include "bcsc_s.h"
-#include <sched.h>
 
 /**
  *******************************************************************************
@@ -287,20 +286,6 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 
     assert( spm->loc2glob == NULL );
 
-
-    
-    cpu_set_t mask;
-	CPU_ZERO(&mask);
-	CPU_SET(0, &mask);
-	CPU_SET(1, &mask);
-	CPU_SET(2, &mask);
-	CPU_SET(3, &mask);
-	CPU_SET(4, &mask);
-	CPU_SET(5, &mask);
-	CPU_SET(6, &mask);
-	CPU_SET(7, &mask);
-	sched_setaffinity(0, sizeof(mask), &mask);
-
     /*
      * Initialize the col2cblk array. col2cblk[i] contains the cblk index of the
      * i-th column. col2cblk[i] = -1 if not local.
@@ -406,7 +391,6 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 			else{
 				memcpy(bcsc->Uvalues, spm->values, spm->nnz * sizeof(double));
 			}
-			
 		}
 		else {
 			bcsc->Uvalues = bcsc->Lvalues;

@@ -61,6 +61,22 @@ static inline void *pastix_malloc_func( size_t size,
 #  define memAlloc(size) malloc(size)
 #endif
 
+#ifdef PASTIX_WITH_CUDA
+#define memFreeHost(ptr) cudaFree((void*)(ptr))
+#define memFreeHost_null(ptr) do			\
+	{					\
+	    cudaFree( ptr );			\
+	    (ptr) = NULL;			\
+	} while(0)
+#else
+#define memFreeHost(ptr) free((void*)(ptr))
+#define memFreeHost_null(ptr) do			\
+	{					\
+	    memFree( ptr );			\
+	    (ptr) = NULL;			\
+	} while(0)
+#endif
+
 #define memFree(ptr) free((void*)(ptr))
 #define memFree_null(ptr) do			\
 	{					\
@@ -72,6 +88,18 @@ static inline void *pastix_malloc_func( size_t size,
     do {                                                        \
         ptr = (type*)memAlloc((size) * sizeof(type)) ;          \
     } while(0)
+
+#ifdef PASTIX_WITH_CUDA
+#define MALLOC_HOST(ptr, size, type)                          \
+    do {                                                        \
+        cudaMallocHost((void**)&ptr, (size) * sizeof(type)) ;          \
+    } while(0)
+#else
+#define MALLOC_HOST(ptr, size, type)                          \
+    do {                                                        \
+        ptr = (type*)memAlloc((size) * sizeof(type)) ;          \
+    } while(0)
+#endif
 
 #define MALLOC_EXTERN(ptr, size, type)		\
     ptr = (type*)malloc((size) * sizeof(type))

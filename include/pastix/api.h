@@ -129,6 +129,7 @@ typedef enum pastix_iparm_e {
     IPARM_FLOAT,                 /**< Indicate the arithmetics                                       Default: PastixDouble              IN  */
     IPARM_MTX_TYPE,              /**< Indicate matrix format                                         Default: -1                        IN  */
     IPARM_DOF_NBR,               /**< Degree of freedom per node                                     Default: 1                         IN  */
+    IPARM_REUSE_LU,
     IPARM_SIZE
 } pastix_iparm_t;
 

@@ -133,7 +133,6 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
     else{
 		memset( gmH, 0, im * im1 * sizeof(pastix_complex64_t) );
 	}
-    
 
 #if defined(PASTIX_DEBUG_GMRES)
     dbg_x = (pastix_complex64_t *)solver.malloc(n   * sizeof(pastix_complex64_t));

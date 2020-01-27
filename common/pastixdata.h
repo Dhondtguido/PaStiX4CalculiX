@@ -95,6 +95,10 @@ struct pastix_data_s {
 
     char            *dirtemp;            /**< Unique directory name to store output files                         */
 
+	void 			*L;
+	void 			*U;
+	pastix_int_t	 LUbufferSize;
+
     /* Backup for old pastix interface */
     void            *b;
     void            *x0;

@@ -372,7 +372,7 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 70;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
     iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 32 * 1024;
 
     /* Compression */
@@ -419,6 +419,7 @@ pastixInitParam( pastix_int_t *iparm,
     iparm[IPARM_FLOAT]      = 3;
     iparm[IPARM_MTX_TYPE]   = -1;
     iparm[IPARM_DOF_NBR]    = 1;
+    iparm[IPARM_REUSE_LU]   = 0;
 
     dparm[DPARM_FILL_IN]            =  0.;
     dparm[DPARM_EPSILON_REFINEMENT] = -1.;
@@ -607,8 +608,8 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
 		if (*(pastix->cublas_stat) != CUBLAS_STATUS_SUCCESS) {
 			printf ("CUBLAS initialization failed\n");
 		}
-#endif
 		cudaStreamCreate(&(pastix->streamGPU));
+#endif
 	}
 	else
 	{
@@ -684,6 +685,10 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
 
     pastix->bcsc       = NULL;
     pastix->solvmatr   = NULL;
+    if(!iparm[IPARM_REUSE_LU]){
+		pastix->L = NULL;
+		pastix->U = NULL;
+	}
 
     pastix->cpu_models = NULL;
     pastix->gpu_models = NULL;

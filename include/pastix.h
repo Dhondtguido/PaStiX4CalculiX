@@ -67,6 +67,7 @@ void pastixInit     ( pastix_data_t **pastix_data,
                       MPI_Comm        pastix_comm,
                       pastix_int_t   *iparm,
                       double         *dparm );
+                      
 void pastixInitWithAffinity( pastix_data_t **pastix_data,
                              MPI_Comm        pastix_comm,
                              pastix_int_t   *iparm,

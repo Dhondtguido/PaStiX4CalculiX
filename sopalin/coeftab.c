@@ -191,11 +191,11 @@ coeftabExit( SolverMatrix *solvmtx )
         for (i = 0; i < solvmtx->cblknbr; i++)
         {
             if (solvmtx->cblktab[i].lcoeftab) {
-                memFree_null(solvmtx->cblktab[i].lcoeftab);
+                //memFreeHost_null(solvmtx->cblktab[i].lcoeftab);
             }
 
             if (solvmtx->cblktab[i].ucoeftab) {
-                memFree_null(solvmtx->cblktab[i].ucoeftab);
+                //memFreeHost_null(solvmtx->cblktab[i].ucoeftab);
             }
 
             if (solvmtx->cblktab[i].cblktype & CBLK_COMPRESSED) {

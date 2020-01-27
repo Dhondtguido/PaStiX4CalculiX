@@ -51,6 +51,7 @@ cpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_dat
 gpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->gpu_coefs))[PastixKernelGEMMBlok2d2d][0])" ]
 cublas_handle [ type = "cublasHandle_t *" hidden = on default = "(sopalin_data->cublas_handle)" ]
 
+
 /**************************************************
  *                   GETRF                        *
  * panel factorization: do trf of diagonal and    *

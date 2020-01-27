@@ -270,10 +270,93 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
      * called the bcsc values have changed, or a factorization have already been
      * performed, so we need to update the coeftab arrays.
      */
-    if (pastix_data->bcsc != NULL)
+    /*if (pastix_data->bcsc != NULL)
     {
         coeftabExit( pastix_data->solvmatr );
-    }
+    }*/
+    
+    SolverCblk* cblk = pastix_data->solvmatr->cblktab;
+
+	if(pastix_data->solvmatr->coefnbr > pastix_data->LUbufferSize){
+		if(pastix_data->L != NULL){
+			printf("REALLOCATING BUFFER!\n");
+			printf("REALLOCATING BUFFER!\n");
+			printf("REALLOCATING BUFFER!\n");
+			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+				memFreeHost_null(pastix_data->L);
+			}
+			else{
+				memFree_null(pastix_data->L);
+			}
+		}
+		if(pastix_data->U != NULL){
+			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+				memFreeHost_null(pastix_data->U);
+			}
+			else{
+				memFree_null(pastix_data->U);
+			}
+		}
+	}
+
+    if(pastix_data->L == NULL){
+		if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+			if(bcsc->flttype == PastixFloat)
+				MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, float );
+			else
+				MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, double );
+		}
+		else
+		{
+			if(bcsc->flttype == PastixFloat)
+				MALLOC_INTERN( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, float );
+			else
+				MALLOC_INTERN( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, double );
+		}
+		pastix_data->LUbufferSize = pastix_data->solvmatr->coefnbr * 1.1;
+	}
+	
+	if(bcsc->flttype == PastixFloat)
+		memset( pastix_data->L, 0, pastix_data->solvmatr->coefnbr * sizeof(float) );
+	else
+		memset( pastix_data->L, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );
+	
+	if(pastix_data->csc->mtxtype == SpmGeneral){
+		if(pastix_data->U == NULL){
+			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+				if(bcsc->flttype == PastixFloat)
+					MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, float );
+				else
+					MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double );
+			}
+			else{
+				if(bcsc->flttype == PastixFloat)
+					MALLOC_INTERN( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, float );
+				else
+					MALLOC_INTERN( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double );
+			}
+		}
+		if(bcsc->flttype == PastixFloat)
+			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(float) );
+		else
+			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );
+	}
+	
+    pastix_int_t counter = 0;
+    for( int i = 0; i < pastix_data->solvmatr->cblknbr; i++){
+		if(bcsc->flttype == PastixFloat)
+			cblk[i].lcoeftab = pastix_data->L + counter * sizeof(float);
+		else
+			cblk[i].lcoeftab = pastix_data->L + counter * sizeof(double);
+			
+		if(pastix_data->csc->mtxtype == SpmGeneral){
+			if(bcsc->flttype == PastixFloat)
+				cblk[i].ucoeftab = pastix_data->U + counter * sizeof(float);
+			else
+				cblk[i].ucoeftab = pastix_data->U + counter * sizeof(double);
+		}
+		counter += cblk_colnbr( cblk+i ) * cblk[i].stride;
+	}
 
     coeftabInit( pastix_data,
                  pastix_data->iparm[IPARM_FACTORIZATION] == PastixFactLU ? PastixLUCoef : PastixLCoef );
@@ -595,21 +678,6 @@ pastix_task_numfact( pastix_data_t *pastix_data,
             return rc;
         }
     }
-    
-	if(spm->valuesGPU == NULL){
-		cudaMalloc((void**) &(spm->valuesGPU), spm->nnzexp * sizeof(double));
-	}
-	cudaMemcpyAsync(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice, pastix_data->streamGPU);
-	
-	if(spm->colptrGPU == NULL){
-		cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
-		cudaMemcpyAsync(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
-	}
-	
-	if(spm->rowptrGPU == NULL){
-		cudaMalloc((void**) &(spm->rowptrGPU), spm->nnzexp * sizeof(pastix_int_t));
-		cudaMemcpyAsync(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
-	}
 
     if ( !(pastix_data->steps & STEP_BCSC2CTAB) ) {
         rc = pastix_subtask_bcsc2ctab( pastix_data );
@@ -625,12 +693,13 @@ pastix_task_numfact( pastix_data_t *pastix_data,
         }
     }
     
-    
-    
 #ifdef PASTIX_WITH_CUDA
     printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_s_cblok_gemms, gpu_s_cblok_gemms);
     printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_s_blok_gemms, gpu_s_blok_gemms);
     printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_s_trsm, gpu_s_trsm);
+    
+    cpu_s_cblok_gemms = gpu_s_cblok_gemms = cpu_s_blok_gemms = gpu_s_blok_gemms = cpu_s_trsm = gpu_s_trsm = 0;
+    
 #endif
 
 

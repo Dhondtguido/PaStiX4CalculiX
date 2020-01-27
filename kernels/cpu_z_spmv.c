@@ -29,7 +29,6 @@ cpu_z_spmv(		pastix_int_t n,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind){
 	
-	#pragma omp parallel for
     for( pastix_int_t i=0; i<n; i++)
     {
 		pastix_complex64_t dot = 0.0;
@@ -54,7 +53,6 @@ cpu_z_spmv_perm(pastix_int_t n,
 				pastix_int_t* colind,
 				pastix_int_t* perm){
 	
-	#pragma omp parallel for
     for( pastix_int_t i=0; i<n; i++)
     {
 		pastix_complex64_t dot = 0.0;

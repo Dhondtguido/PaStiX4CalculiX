@@ -210,7 +210,6 @@ gpucblk_zgemmsp(       pastix_coefside_t  sideA,
     count = (lblok - blok) - shift;
 
     for (iterblok=blok+shift, i=0; iterblok<lblok; iterblok++, i++) {
-        /* Find facing blok */
         while (!is_block_inside_fblock( iterblok, fblok ))
         {
             fblok++;
@@ -231,13 +230,12 @@ gpucblk_zgemmsp(       pastix_coefside_t  sideA,
         if (i+1 == MAX_BATCH_COUNT) {
             pastix_zgemm_vbatched_nt(
                 trans, N, K,
-                /* alpha  */  mzone,
-                /* B      */  B, ldb,
-                /* beta   */  zone,
+                mzone,
+                B, ldb,
+                zone,
                 max_m, MAX_BATCH_COUNT,
                 stream, params );
 
-            /* Restart the loop */
             i = -1;
             count -= MAX_BATCH_COUNT;
             max_m = 0;
@@ -247,9 +245,9 @@ gpucblk_zgemmsp(       pastix_coefside_t  sideA,
     if (count > 0) {
         pastix_zgemm_vbatched_nt(
             trans, N, K,
-            /* alpha  */  mzone,
-            /* B      */  B, ldb,
-            /* beta   */  zone,
+            mzone,
+            B, ldb,
+            zone,
             max_m, count,
             stream, params );
     }

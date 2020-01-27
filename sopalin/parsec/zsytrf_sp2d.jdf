@@ -48,6 +48,7 @@ gpu1d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_dat
 cpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->cpu_coefs))[PastixKernelGEMMBlok2d2d][0])" ]
 gpu2d_coefs [ type = "pastix_fixdbl_t *" hidden = on default = "&((*(sopalin_data->gpu_coefs))[PastixKernelGEMMBlok2d2d][0])" ]
 cublas_handle [ type = "cublasHandle_t *" hidden = on default = "(sopalin_data->cublas_handle)" ]
+counter [type = "pastix_int_t"          hidden = on  default = 0 ]
 
 /**************************************************
  *                   SYTRF                        *
@@ -603,7 +604,7 @@ BODY [ type=CUDA
                  %}
        weight="(last-k+1)"
        cpu_cost="modelsGetCost3Param( cpu2d_coefs, dimm, dimn, dimk )"
-       gpu_cost="modelsGetCost3Param( gpu2d_coefs, dimm, dimn, dimk )" ]
+       gpu_cost="modelsGetCost3Param( gpu2d_coefs, dimm * 2.5, dimn * 2.5, dimk * 2.5 )" ]
 #if defined(PASTIX_WITH_CUDA)
 {
     /* is2dA && is2dC && noskipC && blok_nk && blok_mk */
@@ -622,6 +623,8 @@ BODY [ type=CUDA
                              A, B, C, &lowrank,
                              parsec_body.stream, cublas_handle );
         }
+        
+		counter++;
     }
 }
 #endif

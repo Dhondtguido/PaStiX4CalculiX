@@ -248,6 +248,8 @@ pastix_task_refine( pastix_data_t *pastix_data,
     pastix_bcsc_t *bcsc  = pastix_data->bcsc;
     int rc;
     void* tmpBcscValues = NULL;
+    char GPUtemp = iparm[IPARM_GPU_NBR];
+    iparm[IPARM_GPU_NBR] = 0;
 
     if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
     {
@@ -266,9 +268,23 @@ pastix_task_refine( pastix_data_t *pastix_data,
         }
     }
     
-    if ( iparm[IPARM_GPU_NBR] == 1 ){
+    if ( iparm[IPARM_GPU_NBR] > 0){
 #ifdef PASTIX_WITH_CUDA	
-		cudaStreamSynchronize(pastix_data->streamGPU);
+		if(spm->valuesGPU == NULL){
+			cudaMalloc((void**) &(spm->valuesGPU), spm->nnzexp * sizeof(double));
+		}
+		cudaMemcpy(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice);
+		
+		if(spm->colptrGPU == NULL){
+			cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
+			cudaMemcpy(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+		}
+		
+		if(spm->rowptrGPU == NULL){
+			cudaMalloc((void**) &(spm->rowptrGPU), spm->nnzexp * sizeof(pastix_int_t));
+			cudaMemcpy(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
+		}
+		
 		createLightSpMV(spm->n, spm->gnnz, spm->colptrGPU, spm->rowptrGPU, spm->values);
 #endif
 	}
@@ -320,9 +336,10 @@ pastix_task_refine( pastix_data_t *pastix_data,
     if( rc != PASTIX_SUCCESS ) {
         return rc;
     }
-#ifdef PASTIX_WITH_CUDA
 	if(pastix_data->iparm[IPARM_GPU_NBR] == 1){
+#ifdef PASTIX_WITH_CUDA
 		destroyLightSpMV();
+#endif
 	}
 	else{
 		if( spm->mtxtype == SpmGeneral ){
@@ -332,8 +349,8 @@ pastix_task_refine( pastix_data_t *pastix_data,
 			bcsc->Lvalues = bcsc->Uvalues = tmpBcscValues;
 		}
 	}
+	iparm[IPARM_GPU_NBR] = GPUtemp;
 
-#endif
     (void)n;
     return PASTIX_SUCCESS;
 }

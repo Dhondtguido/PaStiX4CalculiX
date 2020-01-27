@@ -284,6 +284,7 @@ spmExit( spmatrix_t *spm )
         free(spm->dofs);
         spm->dofs = NULL;
     }
+#ifdef PASTIX_WITH_CUDA
     if(spm->colptrGPU != NULL) {
         cudaFree(spm->colptrGPU);
         spm->colptrGPU = NULL;
@@ -304,6 +305,7 @@ spmExit( spmatrix_t *spm )
         cudaFree(spm->rowptrPERM);
         spm->rowptrPERM = NULL;
 	}
+#endif
 }
 
 /**
