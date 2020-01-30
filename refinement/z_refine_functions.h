@@ -40,9 +40,9 @@ struct z_solver
     void (*dot) ( pastix_data_t *, pastix_int_t, const pastix_complex64_t *, const pastix_complex64_t *, pastix_complex64_t * );
     void   (*copy)( pastix_data_t *, pastix_int_t, const pastix_complex64_t *, pastix_complex64_t * );
     void   (*axpy)( pastix_data_t *, pastix_int_t, pastix_complex64_t, const pastix_complex64_t *, pastix_complex64_t *);
-    void   (*spmv)( const pastix_data_t *, pastix_trans_t, pastix_complex64_t, pastix_complex64_t *, pastix_complex64_t, pastix_complex64_t *, cudaStream_t* );
-    void   (*unblocked_spmv)( pastix_int_t, pastix_complex64_t, pastix_complex64_t, pastix_complex64_t *, pastix_complex64_t *, pastix_complex64_t *, pastix_int_t*, pastix_int_t* );
-    void   (*unblocked_spmv_perm)( pastix_int_t, pastix_complex64_t, pastix_complex64_t, pastix_complex64_t *, pastix_complex64_t *, pastix_complex64_t *, pastix_int_t*, pastix_int_t*, pastix_int_t* );
+    void   (*spmv)( const pastix_data_t *, pastix_trans_t, pastix_complex64_t, const pastix_complex64_t *, pastix_complex64_t, pastix_complex64_t *);
+    void   (*unblocked_spmv)( pastix_int_t, pastix_complex64_t, pastix_complex64_t, const pastix_complex64_t *, const pastix_complex64_t *, pastix_complex64_t *, pastix_int_t*, pastix_int_t* );
+    void   (*unblocked_spmv_perm)( pastix_int_t, pastix_complex64_t, pastix_complex64_t, const pastix_complex64_t *, const pastix_complex64_t *, pastix_complex64_t *, pastix_int_t*, pastix_int_t*, pastix_int_t* );
     void   (*spsv)( pastix_data_t *, pastix_complex64_t * );
     double (*norm)( pastix_data_t *, pastix_int_t, const pastix_complex64_t * );
     void   (*gemv)( pastix_data_t *, pastix_int_t, pastix_int_t,
@@ -52,10 +52,10 @@ struct z_solver
 
 void z_refine_init(struct z_solver *, pastix_data_t*);
 
-pastix_int_t z_gmres_smp   ( pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm );
-pastix_int_t z_gmres_gpu_smp   ( pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm );
-pastix_int_t z_grad_smp    ( pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm );
-pastix_int_t z_pivot_smp   ( pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm );
-pastix_int_t z_bicgstab_smp( pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm );
+pastix_int_t z_gmres_smp   ( pastix_data_t *pastix_data, void *x, void *b);
+pastix_int_t z_gmres_gpu_smp   ( pastix_data_t *pastix_data, void *x, void *b);
+pastix_int_t z_grad_smp    ( pastix_data_t *pastix_data, void *x, void *b);
+pastix_int_t z_pivot_smp   ( pastix_data_t *pastix_data, void *x, void *b);
+pastix_int_t z_bicgstab_smp( pastix_data_t *pastix_data, void *x, void *b);
 
 #endif /* _z_refine_functions_h_ */

@@ -26,11 +26,23 @@
 #include "bcsc_d.h"
 #include "bcsc_s.h"
 
+#include <parsec.h>
+#include <parsec/data.h>
+#include <parsec/data_distribution.h>
+#if defined(PASTIX_WITH_CUDA)
+#include <parsec/devices/cuda/dev_cuda.h>
+#endif
+#include "/ya/ya165/ya16551/x/mfaverge-parsec-b580d208094e/parsec/utils/zone_malloc.h"
+
+gpu_device_t* gpu_device = NULL;
+char* gpu_base = NULL;
+
 #if defined(PASTIX_DEBUG_SOLVE)
 #include <z_spm.h>
 #include <c_spm.h>
 #include <d_spm.h>
 #include <s_spm.h>
+
 
 static inline void
 dump_rhs( char *name, spm_coeftype_t flttype, int n, const void *b )
@@ -526,7 +538,48 @@ pastix_task_solve( pastix_data_t *pastix_data,
     }
 
     bcsc  = pastix_data->bcsc;
+	if ( pastix_data->iparm[IPARM_GPU_NBR] > 0){
+#ifdef PASTIX_WITH_CUDA	
+		spmatrix_t* spm = pastix_data->csc;
+		if(gpu_device == NULL){
+			pastix_int_t ndevices = parsec_devices_enabled();
+			ndevices -= 2;
+			for(pastix_int_t i = 0; i < ndevices; i++) {
+				if( NULL == (gpu_device = (gpu_device_t*)parsec_devices_get(i+2)) ) continue;
+			}
+		}
+		
+		printf("Sending CSC data to GPU\n");
+		
+		createLightSpMV(spm->n, spm->gnnz, spm->colptrGPU, spm->rowptrGPU, spm->values);
 
+		gpu_base = gpu_device->memory->base;
+		if(spm->valuesGPU == NULL){
+			//cudaMalloc((void**) &(spm->valuesGPU), spm->nnzexp * sizeof(double));
+			//spm->valuesGPU = zone_malloc(gpu_device->memory, spm->nnzexp * sizeof(double));
+			spm->valuesGPU = gpu_base;
+			gpu_base += spm->nnzexp * sizeof(double);
+		}
+		cudaMemcpyAsync(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+		
+		if(spm->colptrGPU == NULL){
+			//cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
+			//spm->colptrGPU = zone_malloc(gpu_device->memory, (spm->n+1) * sizeof(pastix_int_t));
+			spm->colptrGPU = gpu_base;
+			gpu_base += (spm->n+1) * sizeof(pastix_int_t);
+			cudaMemcpyAsync(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+		}
+		
+		if(spm->rowptrGPU == NULL){
+			//cudaMalloc((void**) &(spm->rowptrGPU), spm->nnzexp * sizeof(pastix_int_t));
+			//spm->rowptrGPU = zone_malloc(gpu_device->memory, spm->nnzexp * sizeof(pastix_int_t));
+			spm->rowptrGPU = gpu_base;
+			gpu_base += spm->nnzexp * sizeof(pastix_int_t);
+			cudaMemcpyAsync(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+		}
+		
+#endif
+	}
     /* Compute P * b */
     pastix_subtask_applyorder( pastix_data, bcsc->flttype,
                                PastixDirForward, bcsc->gN, nrhs, b, ldb );

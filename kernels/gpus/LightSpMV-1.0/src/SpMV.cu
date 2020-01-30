@@ -117,19 +117,19 @@ void SpMVFloatVector::loadData() {
 		CudaCheckError();
 
 		/*allocate counter buffers*/
-		cudaMalloc(&_cudaRowCounters[i], sizeof(int64_t));
+/*		cudaMalloc(&_cudaRowCounters[i], sizeof(int64_t));
 		CudaCheckError();
 
 		cudaMemcpyToSymbol(_cudaNumRows, &_opt->_numRows, sizeof(int64_t));
 		CudaCheckError();
 
 		cudaMemcpyToSymbol(_cudaNumCols, &_opt->_numCols, sizeof(int64_t));
-		CudaCheckError();
+		CudaCheckError();*/
 
 		/******************************************************
 		 * Load matrix data
 		 ******************************************************/
-		numBytes = (_opt->_numRows + 1) * sizeof(int64_t);
+	/*	numBytes = (_opt->_numRows + 1) * sizeof(int64_t);
 		cudaMalloc(&_rowOffsets[i], numBytes);
 		CudaCheckError();
 
@@ -143,39 +143,39 @@ void SpMVFloatVector::loadData() {
 
 		cudaMemcpy(_colIndexValues[i], _opt->_colIndexValues, numBytes,
 				cudaMemcpyHostToDevice);
-		CudaCheckError();
+		CudaCheckError();*/
 
 		/*load the numerical values*/
-		numBytes = _opt->_numValues * sizeof(float);
+	/*	numBytes = _opt->_numValues * sizeof(float);
 		cudaMalloc(&_numericalValues[i], numBytes);
 		CudaCheckError();
 
 		cudaMemcpy(_numericalValues[i], _opt->_numericalValues, numBytes,
 				cudaMemcpyHostToDevice);
 		CudaCheckError();
-
+*/
 		/*****************************************************
 		 * Load vector X data
 		 ******************************************************/
-		numBytes = _opt->_numCols * sizeof(float);
+		/*numBytes = _opt->_numCols * sizeof(float);
 		cudaMalloc(&_vectorX[i], numBytes);
 		CudaCheckError();
 
 		cudaMemcpy(_vectorX[i], _opt->_vectorX, numBytes,
 				cudaMemcpyHostToDevice);
 		CudaCheckError();
-
+*/
 		/*****************************************************
 		 * vector Y data
 		 ******************************************************/
-		numBytes = _opt->_numRows * sizeof(float);
+		/*numBytes = _opt->_numRows * sizeof(float);
 		cudaMalloc(&_vectorY[i], numBytes);
 		CudaCheckError();
-
+*/
 		/*copy the data*/
-		cudaMemcpy(_vectorY[i], _opt->_vectorY, numBytes,
+	/*	cudaMemcpy(_vectorY[i], _opt->_vectorY, numBytes,
 				cudaMemcpyHostToDevice);
-		CudaCheckError();
+		CudaCheckError();*/
 	}
 }
 void SpMVFloatVector::storeData() {
@@ -327,6 +327,10 @@ SpMVDoubleVector::~SpMVDoubleVector() {
 		/*select the device*/
 		cudaSetDevice(_opt->_gpus[i].first);
 		CudaCheckError();
+		
+		if(_cudaRowCounters[i]){
+			cudaFree(_cudaRowCounters[i]);
+		}
 
 		/*release the resources*/
 		if (_rowOffsets[i]) {

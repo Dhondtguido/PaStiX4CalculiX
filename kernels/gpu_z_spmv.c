@@ -24,12 +24,25 @@ void
 gpu_z_spmv(		pastix_int_t n, 
 				pastix_complex64_t alpha,
 				pastix_complex64_t beta,
-		        pastix_complex64_t *A,
-		        pastix_complex64_t *x,
+		        const pastix_complex64_t *A,
+		        const pastix_complex64_t *x,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind ){
-					
-	performLightLsMV(alpha, A-1, rowptr, colind-1, x-1, beta, y);
+
+#ifdef PRECISION_d
+	(void) n;
+	performLightLsMV(alpha, (double*) (A-1), rowptr, colind-1, (double*) (x-1), beta, y);
 	cudaDeviceSynchronize();
+#else
+	(void) n;
+	(void) alpha;
+	(void) beta;
+	(void) A;
+	(void) x;
+	(void) y;
+	(void) rowptr;
+	(void) colind;
+	printf("SPMV on GPU only implemented in double precision\n");
+#endif
 }

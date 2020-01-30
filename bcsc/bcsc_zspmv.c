@@ -33,15 +33,6 @@ typedef void (*bcsc_zspmv_Ax_fct_t)( const pastix_bcsc_t *,
                                      const pastix_complex64_t *,
                                      pastix_complex64_t,
                                      pastix_complex64_t * );
-
-typedef void (*bcsc_zspmv_Ax_cuda_fct_t)( const pastix_bcsc_t *,
-                                     const bcsc_cblk_t *,
-                                     pastix_complex64_t,
-                                     const pastix_complex64_t *,
-                                     const pastix_complex64_t *,
-                                     pastix_complex64_t,
-                                     pastix_complex64_t *,
-									 cudaStream_t );
 static inline void
 __bcsc_zspmv_by( pastix_int_t        n,
                  pastix_complex64_t  beta,
@@ -133,68 +124,6 @@ __bcsc_zspmv_conjAx( const pastix_bcsc_t      *bcsc,
 #endif
 
 static inline void
-__bcsc_zspmv_Ax_cuda( const pastix_bcsc_t      *bcsc,
-                 const bcsc_cblk_t        *cblk,
-                 pastix_complex64_t        alpha,
-                 const pastix_complex64_t *A,
-                 const pastix_complex64_t *x,
-                 pastix_complex64_t        beta,
-                 pastix_complex64_t       *y,
-				 cudaStream_t		       stream )
-{
-			
-#ifdef PASTIX_WITH_CUDA
-	pastix_z_spmv(cblk->colnbr,
-				 alpha,
-				 A,
-				 cblk->coltab,
-				 bcsc->rowtab,
-				 x,
-				 beta,
-				 y,
-				 stream);
-#endif
-				 
-		/*		 
-    __bcsc_zspmv_by( cblk->colnbr, beta, y );
-
-    for( j=0; j<cblk->colnbr; j++, y++ )
-    {
-        for( i=cblk->coltab[j]; i< cblk->coltab[j+1]; i++ )
-        {
-            *y += alpha * A[i] * x[ bcsc->rowtab[i] ];
-        }
-    }*/
-}
-
-static inline void
-__bcsc_zspmv_Ax_ind_cuda( const pastix_bcsc_t      *bcsc,
-                     pastix_complex64_t        alpha,
-                     const pastix_complex64_t *A,
-                     const pastix_complex64_t *x,
-                     pastix_complex64_t        beta,
-                     pastix_complex64_t       *y,
-					 cudaStream_t		       stream )
-{
-
-}
-
-#if defined(PRECISION_z) || defined(PRECISION_c)
-static inline void
-__bcsc_zspmv_conjAx_cuda( const pastix_bcsc_t      *bcsc,
-                     const bcsc_cblk_t        *cblk,
-                     pastix_complex64_t        alpha,
-                     const pastix_complex64_t *A,
-                     const pastix_complex64_t *x,
-                     pastix_complex64_t        beta,
-                     pastix_complex64_t       *y,
-					 cudaStream_t		       stream )
-{
-
-}
-#endif
-
-static inline void
 __bcsc_zspmv_loop( pastix_trans_t            trans,
                    pastix_complex64_t        alpha,
                    const pastix_bcsc_t      *bcsc,
@@ -272,87 +201,6 @@ else{
         y += cblk->colnbr;
         cblk++;
     }
-}
-
-
-static inline void
-__bcsc_zspmv_loop_cuda( pastix_trans_t            trans,
-                   pastix_complex64_t        alpha,
-                   const pastix_bcsc_t      *bcsc,
-                   const pastix_complex64_t *x,
-                   pastix_complex64_t        beta,
-                   pastix_complex64_t       *y,
-                   pastix_int_t              rank,
-                   pastix_int_t              begin,
-                   pastix_int_t              end,
-				   cudaStream_t		        *streams )
-{
-    bcsc_zspmv_Ax_cuda_fct_t  zspmv_Ax = __bcsc_zspmv_Ax_cuda;
-    pastix_complex64_t  *valptr = NULL;
-    pastix_int_t         bloc;
-    bcsc_cblk_t         *cblk;
-
-    /*
-     * There are three cases:
-     *    We can use the Lvalues pointer directly:
-     *          - The matrix is general and we use A^t
-     *          - the matrix is symmetric or hermitian
-     *    We can use the Uvalues pointer directly
-     *          - The matrix is general and we use A
-     *    We have to use Lvalues per row (instead of column)
-     *          - The matrix A is general and Uvalues is unavailable
-     *
-     * To this, we have to add the conj call if ConjTrans or Hermitian
-     *
-     *     Mtxtype   | trans asked | algo applied
-     *     ++++++++++++++++++++++++++++++++++++
-     +     General   | NoTrans     | U if possible, otherwise indirect L
-     +     General   | Trans       | L
-     +     General   | ConjTrans   | conj(L)
-     +     Symmetric | NoTrans     | L
-     +     Symmetric | Trans       | L
-     +     Symmetric | ConjTrans   | conj(L)
-     +     Hermitian | NoTrans     | conj(L)
-     +     Hermitian | Trans       | conj(L)
-     +     Hermitian | ConjTrans   | L
-     */
-    cblk   = bcsc->cscftab + begin;
-    valptr = (pastix_complex64_t*)bcsc->Lvalues;
-
-    if ( (bcsc->mtxtype == PastixGeneral) && (trans == PastixNoTrans) )
-    {
-        /* U */
-        if ( bcsc->Uvalues != NULL ) {
-            valptr = (pastix_complex64_t*)bcsc->Uvalues;
-        }
-        /* Indirect L */
-        else {
-            /* Execute in sequential */
-            if ( rank != 0 ) {
-                return;
-            }
-            return __bcsc_zspmv_Ax_ind_cuda( bcsc, alpha, valptr, x, beta, y, streams[bloc % 64] );
-        }
-    }
-#if defined(PRECISION_z) || defined(PRECISION_c)
-    /* Conj(L) */
-    else if ( ( (bcsc->mtxtype == PastixGeneral  ) && (trans == PastixConjTrans) ) ||
-              ( (bcsc->mtxtype == PastixSymmetric) && (trans == PastixConjTrans) ) ||
-              ( (bcsc->mtxtype == PastixHermitian) && (trans != PastixConjTrans) ) )
-    {
-        zspmv_Ax = __bcsc_zspmv_conjAx_cuda;
-    }
-#endif /* defined(PRECISION_z) || defined(PRECISION_c) */
-	
-    for( bloc=begin; bloc<end; bloc++ )
-    { 
-		zspmv_Ax( bcsc, cblk, alpha, valptr, x, beta, y, streams[bloc % 64] );
-        y += cblk->colnbr;
-        cblk++;
-    }
-#ifdef PASTIX_WITH_CUDA
-    cudaDeviceSynchronize();
-#endif
 }
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -811,24 +659,6 @@ bcsc_zspmv_smp( const pastix_data_t      *pastix_data,
  *          The vector y.
  *
  *******************************************************************************/
-void
-bcsc_zspmv_cuda( const pastix_data_t      *pastix_data,
-                pastix_trans_t            trans,
-                pastix_complex64_t        alpha,
-                const pastix_complex64_t *x,
-                pastix_complex64_t        beta,
-                pastix_complex64_t       *y,
-				cudaStream_t			 *streams )
-{
-    pastix_bcsc_t *bcsc = pastix_data->bcsc;
-
-    if( (bcsc == NULL) || (y == NULL) || (x == NULL) ) {
-        return;
-    }
-
-    __bcsc_zspmv_loop_cuda( trans, alpha, bcsc, x, beta, y,
-                       0, 0, bcsc->cscfnbr, streams );
-}
  
 void
 bcsc_zspmv( const pastix_data_t      *pastix_data,
@@ -836,15 +666,11 @@ bcsc_zspmv( const pastix_data_t      *pastix_data,
             pastix_complex64_t        alpha,
             const pastix_complex64_t *x,
             pastix_complex64_t        beta,
-            pastix_complex64_t       *y,
-			cudaStream_t			 *streams )
+            pastix_complex64_t       *y)
 {
     pastix_int_t *iparm = pastix_data->iparm;
     
-    if ( iparm[IPARM_GPU_NBR] > 0 ) {
-        bcsc_zspmv_cuda( pastix_data, trans, alpha, x, beta, y, streams );
-    }
-    else if ( iparm[IPARM_SCHEDULER] == PastixSchedSequential ) {
+    if ( iparm[IPARM_SCHEDULER] == PastixSchedSequential ) {
         bcsc_zspmv_seq( pastix_data, trans, alpha, x, beta, y );
     }
     else {

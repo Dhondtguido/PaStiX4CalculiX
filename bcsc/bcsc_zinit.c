@@ -135,7 +135,7 @@ bcsc_zinit_A( const spmatrix_t     *spm,
             pastix_int_t iterrow  = spm->rowptr[i]-baseval;
             pastix_int_t iterrow2 = ord->permtab[iterrow] * dof;
             
-            /*ival = i * dof * dof;
+            ival = i * dof * dof;
 
             for (idofcol = 0; idofcol < dof; idofcol++)
             {
@@ -152,16 +152,7 @@ bcsc_zinit_A( const spmatrix_t     *spm,
 
                 coltab[ colidx ] += dof;
                 assert( coltab[ colidx ] <= coltab[ colidx+1 ] );
-            }*/
-
-			pastix_int_t colidx = itercol2 + 0 - fcolnum;
-			pastix_int_t pos = coltab[ colidx ];
-
-			bcsc->rowtab[ pos ] = iterrow2;
-			Lvalues[ pos ] = values[ i ];
-			
-			coltab[ colidx ] ++;
-			//assert( coltab[ colidx ] <= coltab[ colidx+1 ] );
+            }
         }
     }
 }
@@ -479,7 +470,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
             pastix_int_t  		**sorttab)
 {
     bcsc_cblk_t *blockcol;
-    pastix_int_t itercblk, itercol, size;
+    pastix_int_t itercblk, itercol;
     
     pastix_complex64_t* permedValues;
     pastix_int_t* permedRows;
@@ -612,7 +603,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
     bcsc_restore_coltab( bcsc );
 
     /* Sort the csc */
-    bcsc_zsort( bcsc, &(bcsc->rowtab), &(bcsc->Lvalues), &(bcsc->sorttab) );
+    bcsc_zsort( bcsc, &(bcsc->rowtab), (pastix_complex64_t**)(&(bcsc->Lvalues)), &(bcsc->sorttab) );
 
     if ( spm->mtxtype == SpmGeneral ) {
 	/* A^t is not required if only refinement is performed */
@@ -632,7 +623,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
             bcsc_restore_coltab( bcsc );
 
 	    /* Sort the transposed csc */
-	    bcsc_zsort( bcsc, &trowtab, &(bcsc->Uvalues), &(bcsc->sorttab) );
+	    bcsc_zsort( bcsc, &trowtab, (pastix_complex64_t**)(&(bcsc->Uvalues)), &(bcsc->sorttab) );
 	    memFree( trowtab );
         }
     }

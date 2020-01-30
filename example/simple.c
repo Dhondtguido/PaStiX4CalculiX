@@ -3,7 +3,7 @@
  *
  * @brief A simple example that reads the matrix and then runs pastix in one call.
  *
- * @copyright 2015-2018 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+ * @copyright 2015-2019 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
  *                      Univ. Bordeaux. All rights reserved.
  *
  * @version 6.0.1
@@ -47,7 +47,7 @@ int main (int argc, char **argv)
      * Read the sparse matrix with the driver
      */
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( driver, filename, spm, iparm );
+    spmReadDriver( driver, filename, spm );
     free( filename );
 
     spmPrintInfo( spm, stdout );
@@ -78,27 +78,8 @@ int main (int argc, char **argv)
     /**
      * Normalize A matrix (optional, but recommended for low-rank functionality)
      */
-//    double normA = spmNorm( SpmFrobeniusNorm, spm );
-//    spmScalMatrix( 1./normA, spm );
-    size = pastix_size_of( spm->flttype ) * spm->n * nrhs;
-    x = malloc( size );
-    b = malloc( size );
-printf("size: %i\n", size);
-  FILE* file = fopen ("/ya/ya127/ya12797/w/Solver_dev/Solve_dev/testdaten/job6Data/b.mtx", "r");
-  int i = 0;
-  while (!feof (file))
-    {  
-      fscanf (file, "%lf", &(((double*)x)[i]));      
- //     printf ("%lf\n", ((double*)x)[i]);      
-      i++;
-if(i == spm->n)
-    break;
-    }
-  fclose (file);    
-
-    memcpy( b, x, size );
-
-
+    double normA = spmNorm( SpmFrobeniusNorm, spm );
+    spmScalMatrix( 1./normA, spm );
 
     /**
      * Perform the numerical factorization
@@ -109,36 +90,33 @@ if(i == spm->n)
      * Generates the b and x vector such that A * x = b
      * Compute the norms of the initial vectors if checking purpose.
      */
+    size = pastix_size_of( spm->flttype ) * spm->n * nrhs;
+    x = malloc( size );
+    b = malloc( size );
 
-/*
     if ( check )
     {
         if ( check > 1 ) {
             x0 = malloc( size );
         }
-
-        spmGenRHS( SpmRhsI, nrhs, spm, x0, spm->n, b, spm->n );
+        spmGenRHS( SpmRhsRndX, nrhs, spm, x0, spm->n, b, spm->n );
         memcpy( x, b, size );
     }
-//    else {
-//        spmGenRHS( SpmRhsRndB, nrhs, spm, NULL, spm->n, x, spm->n );
+    else {
+        spmGenRHS( SpmRhsRndB, nrhs, spm, NULL, spm->n, x, spm->n );
 
-        // Apply also normalization to b vectors /
+        /* Apply also normalization to b vectors */
         spmScalVector( spm->flttype, 1./normA, spm->n * nrhs, b, 1 );
 
-        // Save b for refinement /
+        /* Save b for refinement */
         memcpy( b, x, size );
     }
-*/
 
-//for(int i = 0; i < spm->n; i++){
-//      printf ("%lf\n", ((double*)b)[i]);      
-//}
     /**
      * Solve the linear system (and perform the optional refinement)
      */
     pastix_task_solve( pastix_data, nrhs, x, spm->n );
- //   pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
+    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
 
     if ( check )
     {
@@ -148,11 +126,6 @@ if(i == spm->n)
             free( x0 );
         }
     }
-        FILE *f = fopen("X.sol", "w");
-        for (int i = 0; i < spm->n; ++i) {
-            fprintf(f,"%.17f\n", ((double*)x)[i]);
-        }
-        fclose(f);
 
     spmExit( spm );
     free( spm );

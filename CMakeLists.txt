@@ -274,7 +274,7 @@ if( PASTIX_WITH_CUDA )
         endif()
         set(CMAKE_REQUIRED_INCLUDES  "${saved_include}")
         set(CMAKE_REQUIRED_LIBRARIES "${saved_libs}")
-        list(APPEND CUDA_NVCC_FLAGS -O3 -arch=sm_35 -lcusparse )
+        list(APPEND CUDA_NVCC_FLAGS -O3 -arch=sm_35 -lcusparse -w )
         
 		set(CUDA_SEPARABLE_COMPILATION ON)
 

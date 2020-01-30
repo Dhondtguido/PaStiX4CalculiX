@@ -673,8 +673,7 @@ gpu_zscalo( pastix_trans_t            trans,
  *
  *******************************************************************************/
 void
-gpublok_zscalo( pastix_trans_t            trans,
-                SolverCblk               *cblk,
+gpublok_zscalo( SolverCblk               *cblk,
                 pastix_int_t              blok_m,
                 const cuDoubleComplex *A,
                 const cuDoubleComplex *D,

@@ -440,7 +440,7 @@ cpucblk_zhetrfsp1d_panel( SolverMatrix       *solvmtx,
 
     if ( (DLh != NULL) && (cblk->cblktype & CBLK_LAYOUT_2D) ) {
         /* Copy L into the temporary buffer and multiply by D */
-        cpucblk_zscalo( PastixConjTrans, cblk, DLh );
+        cpucblk_zscalo( cblk, DLh );
     }
     return nbpivots;
 }

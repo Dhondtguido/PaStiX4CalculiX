@@ -24,6 +24,13 @@
 #include "s_spm.h"
 #include "p_spm.h"
 
+#include <parsec.h>
+#include <parsec/data.h>
+#include <parsec/data_distribution.h>
+#if defined(PASTIX_WITH_CUDA)
+#include <parsec/devices/cuda/dev_cuda.h>
+#endif
+
 #include <cuda_runtime.h>
 #include <cblas.h>
 #include <lapacke.h>
@@ -284,28 +291,35 @@ spmExit( spmatrix_t *spm )
         free(spm->dofs);
         spm->dofs = NULL;
     }
+/*
 #ifdef PASTIX_WITH_CUDA
     if(spm->colptrGPU != NULL) {
-        cudaFree(spm->colptrGPU);
+		gpu_device_t* gpu_device = (gpu_device_t*)parsec_devices_get(2);
+		zone_free( gpu_device->memory, spm->colptrGPU );
+        //cudaFree(spm->colptrGPU);
         spm->colptrGPU = NULL;
     }
     if(spm->rowptrGPU != NULL) {
-        cudaFree(spm->rowptrGPU);
+		gpu_device_t* gpu_device = (gpu_device_t*)parsec_devices_get(2);
+		zone_free( gpu_device->memory, spm->rowptrGPU );
+        //cudaFree(spm->rowptrGPU);
         spm->rowptrGPU = NULL;
     }
     if(spm->valuesGPU != NULL) {
-        cudaFree(spm->valuesGPU);
+		gpu_device_t* gpu_device = (gpu_device_t*)parsec_devices_get(2);
+		zone_free( gpu_device->memory, spm->valuesGPU );
+        //cudaFree(spm->valuesGPU);
         spm->valuesGPU = NULL;
 	}
+#endif*/
     if(spm->colptrPERM != NULL) {
-        cudaFree(spm->colptrPERM);
+        free(spm->colptrPERM);
         spm->colptrPERM = NULL;
 	}
     if(spm->rowptrPERM != NULL) {
-        cudaFree(spm->rowptrPERM);
+        free(spm->rowptrPERM);
         spm->rowptrPERM = NULL;
 	}
-#endif
 }
 
 /**

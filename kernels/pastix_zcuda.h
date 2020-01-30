@@ -50,8 +50,7 @@ void gpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t 
                       const pastix_lr_t *lowrank, cudaStream_t stream ,
 					   cublasHandle_t *cublas_handle);
 					
-void gpublok_zscalo( pastix_trans_t            trans,
-                SolverCblk               *cblk,
+void gpublok_zscalo( SolverCblk               *cblk,
                 pastix_int_t              blok_m,
                 const cuDoubleComplex *A,
                 const cuDoubleComplex *D,

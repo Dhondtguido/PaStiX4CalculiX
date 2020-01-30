@@ -101,7 +101,9 @@ readIJV( const char   *dirname,
     spm_int_t *tempcol;
     spm_int_t *temprow;
     double       *tempval;
-    spm_int_t  i, Nrow, Ncol, Nnzero;
+    spm_int_t  i, Nrow;
+    spm_int_t Ncol = 0;
+    spm_int_t Nnzero = 0;
 
     filename = malloc(strlen(dirname)+10);
 

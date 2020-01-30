@@ -24,19 +24,8 @@ void
 gpu_z_spmv(		pastix_int_t n, 
 				pastix_complex64_t alpha,
 				pastix_complex64_t beta,
-		        pastix_complex64_t *A,
-		        pastix_complex64_t *x,
+		        const pastix_complex64_t *A,
+		        const pastix_complex64_t *x,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind );
-                        
-void
-gpu_z_spmv_perm(pastix_int_t n, 
-				pastix_complex64_t alpha,
-				pastix_complex64_t beta,
-		        pastix_complex64_t *A,
-		        pastix_complex64_t *x,
-				pastix_complex64_t *y,
-				pastix_int_t* rowptr,
-				pastix_int_t* colind,
-                pastix_int_t* perm );

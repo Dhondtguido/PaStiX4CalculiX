@@ -264,7 +264,7 @@ z_bcsc_spmv_time( pastix_data_t *pastix_data,
 
     clockStart(timer);
     for ( i = 0; i < 50 ; ++i) {
-        solver.spmv( pastix_data, PastixNoTrans, alpha, x, beta, y, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, alpha, x, beta, y );
     }
     clockStop(timer);
 

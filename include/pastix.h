@@ -89,14 +89,13 @@ int pastix_task_solve  ( pastix_data_t      *pastix_data,
 int pastix_task_refine( pastix_data_t *pastix_data,
                         pastix_int_t n, pastix_int_t nrhs,
                         void **b, pastix_int_t ldb,
-                        void **x, pastix_int_t ldx,
-                        spmatrix_t *spm );
+                        void **x, pastix_int_t ldx);
 
 /*
  * Analyze subtasks
  */
 int pastix_subtask_order     ( pastix_data_t      *pastix_data,
-                               const spmatrix_t   *spm,
+                               spmatrix_t   *spm,
                                pastix_order_t     *myorder );
 int pastix_subtask_symbfact  ( pastix_data_t      *pastix_data );
 int pastix_subtask_reordering( pastix_data_t      *pastix_data );
@@ -141,8 +140,7 @@ int pastix_subtask_solve( pastix_data_t *pastix_data,
 int pastix_subtask_refine( pastix_data_t *pastix_data,
                            pastix_int_t n, pastix_int_t nrhs,
                                  void **b, pastix_int_t ldb,
-                                 void **x, pastix_int_t ldx,
-                        spmatrix_t *spm );
+                                 void **x, pastix_int_t ldx);
 /*
  * Schur complement manipulation routines.
  */

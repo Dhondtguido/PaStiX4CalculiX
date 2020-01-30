@@ -217,7 +217,7 @@ bvec_znrm2_smp( pastix_data_t            *pastix_data,
 double
 bvec_znrm2_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
-                const cuDoubleComplex *x )
+                const pastix_complex64_t *x )
 {
     (void)pastix_data;
 #ifdef PASTIX_WITH_CUDA
@@ -228,16 +228,16 @@ bvec_znrm2_cuda( pastix_data_t            *pastix_data,
 #endif
 
 #if defined(PRECISION_z)
-	cublasDznrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+	cublasDznrm2(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, &norm);
 #endif
 #if defined(PRECISION_c)
-	cublasScnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+	cublasScnrm2(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, &norm);
 #endif
 #if defined(PRECISION_d)
-	cublasDnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+	cublasDnrm2(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, &norm);
 #endif
 #if defined(PRECISION_s)
-	cublasSnrm2(*(pastix_data->cublas_handle), n, x, 1, &norm);
+	cublasSnrm2(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, &norm);
 #endif
 
 #if defined(PRECISION_s) || defined(PRECISION_c)
@@ -392,11 +392,11 @@ bvec_zscal_smp( pastix_data_t      *pastix_data,
 void
 bvec_zscal_cuda( pastix_data_t      *pastix_data,
                 pastix_int_t        n,
-                cuDoubleComplex  alpha,
-                cuDoubleComplex *x)
+                pastix_complex64_t  alpha,
+                pastix_complex64_t *x)
 {
 #ifdef PASTIX_WITH_CUDA
-    cublasZscal( *(pastix_data->cublas_handle), n, &alpha, x, 1 );
+    cublasZscal( *(pastix_data->cublas_handle), n, (cuDoubleComplex *) (&alpha), (cuDoubleComplex *) x, 1 );
 #endif
 }
 
@@ -561,13 +561,13 @@ bvec_zaxpy_smp( pastix_data_t            *pastix_data,
 void
 bvec_zaxpy_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
-                cuDoubleComplex        alpha,
-                const cuDoubleComplex *x,
-                cuDoubleComplex       *y)
+                pastix_complex64_t        alpha,
+                const pastix_complex64_t *x,
+                pastix_complex64_t       *y)
 {
 	
 #ifdef PASTIX_WITH_CUDA
-    cublasZaxpy( *(pastix_data->cublas_handle), n, &alpha, x, 1, y, 1 );
+    cublasZaxpy( *(pastix_data->cublas_handle), n, (cuDoubleComplex *) (&alpha), (const cuDoubleComplex *) x, 1, (cuDoubleComplex *) y, 1 );
 #endif
 }
 
@@ -750,14 +750,14 @@ bvec_zdotc_smp( pastix_data_t            *pastix_data,
 void
 bvec_zdotc_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
-                const cuDoubleComplex *x,
-                const cuDoubleComplex *y,
-                cuDoubleComplex       *r)
+                const pastix_complex64_t *x,
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r)
 {
     (void)pastix_data;
 #ifdef PASTIX_WITH_CUDA
     cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
-    cublasZdotc(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
+    cublasZdotc(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, (const cuDoubleComplex *) y, 1, (cuDoubleComplex *) r);
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
 	
 #endif
@@ -940,13 +940,13 @@ bvec_zdotu_smp( pastix_data_t            *pastix_data,
 void
 bvec_zdotu_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
-                const cuDoubleComplex *x,
-                const cuDoubleComplex *y,
-                cuDoubleComplex       *r  )
+                const pastix_complex64_t *x,
+                const pastix_complex64_t *y,
+                pastix_complex64_t       *r  )
 {
 #ifdef PASTIX_WITH_CUDA
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_DEVICE);
-    cublasZdotu(*(pastix_data->cublas_handle), n, x, 1, y, 1, r);
+    cublasZdotu(*(pastix_data->cublas_handle), n, (const cuDoubleComplex *) x, 1, (const cuDoubleComplex *) y, 1, (cuDoubleComplex *) r);
 	cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
 #endif
 }
@@ -1228,12 +1228,12 @@ bvec_zcopy_smp( pastix_data_t            *pastix_data,
 void
 bvec_zcopy_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              n,
-                const cuDoubleComplex *x,
-                cuDoubleComplex       *y )
+                const pastix_complex64_t *x,
+                pastix_complex64_t       *y )
 {
     (void)pastix_data;
 #ifdef PASTIX_WITH_CUDA
-    cudaMemcpy( y, x, n * sizeof(cuDoubleComplex), cudaMemcpyDeviceToDevice );
+    cudaMemcpy( y, x, n * sizeof(pastix_complex64_t), cudaMemcpyDeviceToDevice );
 #endif
 }
 
@@ -1489,16 +1489,16 @@ void
 bvec_zgemv_cuda( pastix_data_t            *pastix_data,
                 pastix_int_t              m,
                 pastix_int_t              n,
-                cuDoubleComplex        alpha,
-                const cuDoubleComplex *A,
+                pastix_complex64_t        alpha,
+                const pastix_complex64_t *A,
                 pastix_int_t              lda,
-                const cuDoubleComplex *x,
-                cuDoubleComplex        beta,
-                cuDoubleComplex       *y )
+                const pastix_complex64_t *x,
+                pastix_complex64_t        beta,
+                pastix_complex64_t       *y )
 {
 #ifdef PASTIX_WITH_CUDA
     cublasZgemv( *(pastix_data->cublas_handle), CUBLAS_OP_N, m, n,
-                 &alpha, A, lda, x, 1,
-                 &beta, y, 1 );
+                 (cuDoubleComplex *) (&alpha), (const cuDoubleComplex *) A, lda, (const cuDoubleComplex *) x, 1,
+                 (cuDoubleComplex *) (&beta), (cuDoubleComplex *) y, 1 );
 #endif
 }

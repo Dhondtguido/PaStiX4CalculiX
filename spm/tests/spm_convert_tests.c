@@ -114,11 +114,11 @@ int main (int argc, char **argv)
     int err = 0;
     FILE *f;
     int rc;
-int* asd;
+
     spmGetOptions( argc, argv,
                    &driver, &filename );
 
-    rc = spmReadDriver( driver, filename, &spm, asd );
+    rc = spmReadDriver( driver, filename, &spm );
     free(filename);
 
     if ( rc != SPM_SUCCESS ) {

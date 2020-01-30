@@ -30,6 +30,17 @@
 #include <cuda.h>
 #include "kernels/gpus/LightSpMV-1.0/src/cLightSpMV.h"
 
+#include <parsec.h>
+#include <parsec/data.h>
+#include <parsec/data_distribution.h>
+#if defined(PASTIX_WITH_CUDA)
+#include <parsec/devices/cuda/dev_cuda.h>
+#endif
+#include "/ya/ya165/ya16551/x/mfaverge-parsec-b580d208094e/parsec/utils/zone_malloc.h"
+
+extern gpu_device_t* gpu_device;
+extern char* gpu_base;
+
 /**
  *******************************************************************************
  *
@@ -39,7 +50,7 @@
  * and the precision
  *
  *******************************************************************************/
-static pastix_int_t (*sopalinRefine[5][4])(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm) =
+static pastix_int_t (*sopalinRefine[5][4])(pastix_data_t *pastix_data, void *x, void *b) =
 {
     //  PastixRefineGMRES_GPU
     {
@@ -128,12 +139,10 @@ int
 pastix_subtask_refine( pastix_data_t *pastix_data,
                        pastix_int_t n, pastix_int_t nrhs,
                              void **b, pastix_int_t ldb,
-                             void **x, pastix_int_t ldx,
-					   spmatrix_t* spm )
+                             void **x, pastix_int_t ldx)
 {
     pastix_int_t   *iparm = pastix_data->iparm;
     pastix_bcsc_t  *bcsc  = pastix_data->bcsc;
-    double timer;
 
     if (nrhs > 1)
     {
@@ -160,29 +169,19 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
     void *xptr = (char *)(*x);
 	void *bptr = (char *)(*b);
 
-    clockStart(timer);
-    {
-        pastix_int_t (*refinefct)(pastix_data_t *, void *, void *, spmatrix_t *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
-        
-        size_t shiftx, shiftb;
-        int i;
+	pastix_int_t (*refinefct)(pastix_data_t *, void *, void *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
+	
+	size_t shiftx, shiftb;
+	int i;
 
-        shiftx = ldx * pastix_size_of( PastixDouble );
-        shiftb = ldb * pastix_size_of( PastixDouble );
+	shiftx = ldx * pastix_size_of( PastixDouble );
+	shiftb = ldb * pastix_size_of( PastixDouble );
 
-        for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
-            pastix_int_t it;
-            it = refinefct( pastix_data, xptr, bptr, spm);
-            pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
-        }
+	for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
+		pastix_int_t it;
+		it = refinefct( pastix_data, xptr, bptr);
+		pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
 	}
-    clockStop(timer);
-
-    pastix_data->dparm[DPARM_REFINE_TIME] = clockVal(timer);
-    if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
-        pastix_print( 0, 0, OUT_TIME_REFINE,
-                      pastix_data->dparm[DPARM_REFINE_TIME] );
-    }
 	
     (void)n;
     return PASTIX_SUCCESS;
@@ -241,16 +240,17 @@ int
 pastix_task_refine( pastix_data_t *pastix_data,
                     pastix_int_t n, pastix_int_t nrhs,
                     void **b, pastix_int_t ldb,
-                    void **x, pastix_int_t ldx,
-                    spmatrix_t* spm )
+                    void **x, pastix_int_t ldx)
 {
+	spmatrix_t* spm = pastix_data->csc;
     pastix_int_t  *iparm = pastix_data->iparm;
     pastix_bcsc_t *bcsc  = pastix_data->bcsc;
     int rc;
     void* tmpBcscValues = NULL;
-    char GPUtemp = iparm[IPARM_GPU_NBR];
-    iparm[IPARM_GPU_NBR] = 0;
-
+    double timer;
+    //char GPUtemp = iparm[IPARM_GPU_NBR];
+    //iparm[IPARM_GPU_NBR] = 0;
+    
     if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
     {
         fprintf(stderr, "Refinement is not available with Schur complement when non local solve is required\n");
@@ -268,27 +268,10 @@ pastix_task_refine( pastix_data_t *pastix_data,
         }
     }
     
-    if ( iparm[IPARM_GPU_NBR] > 0){
-#ifdef PASTIX_WITH_CUDA	
-		if(spm->valuesGPU == NULL){
-			cudaMalloc((void**) &(spm->valuesGPU), spm->nnzexp * sizeof(double));
-		}
-		cudaMemcpy(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice);
-		
-		if(spm->colptrGPU == NULL){
-			cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
-			cudaMemcpy(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-		}
-		
-		if(spm->rowptrGPU == NULL){
-			cudaMalloc((void**) &(spm->rowptrGPU), spm->nnzexp * sizeof(pastix_int_t));
-			cudaMemcpy(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice);
-		}
-		
-		createLightSpMV(spm->n, spm->gnnz, spm->colptrGPU, spm->rowptrGPU, spm->values);
-#endif
-	}
-	else{
+    clockStart(timer);
+    {
+    
+
 		if( spm->mtxtype == SpmGeneral ){
 			tmpBcscValues = bcsc->Uvalues;
 			bcsc->Uvalues = spm->values;
@@ -297,59 +280,77 @@ pastix_task_refine( pastix_data_t *pastix_data,
 			tmpBcscValues = bcsc->Lvalues;
 			bcsc->Lvalues = bcsc->Uvalues = spm->values;
 		}
-	}
-    
-	bcsc->flttype = PastixDouble;
+		
 
-    /* Compute P * b */
-    rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
-                                    PastixDirForward, bcsc->gN, nrhs, *b, ldb );
-    if( rc != PASTIX_SUCCESS ) {
-        return rc;
-    }
+		/* Compute P * b */
+		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
+										PastixDirForward, bcsc->gN, nrhs, *b, ldb );
+		if( rc != PASTIX_SUCCESS ) {
+			return rc;
+		}
 
-    /* Compute P * x */
-    rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
-                                    PastixDirForward, bcsc->gN, nrhs, *x, ldx );
-    if( rc != PASTIX_SUCCESS ) {
-        return rc;
-    }
-	if(iparm[66] == 2)
-		bcsc->flttype = PastixFloat;
-    /* Performe the iterative refinement */
-    rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx, spm );
-    if( rc != PASTIX_SUCCESS ) {
-        return rc;
-    }
-	if(iparm[66] == 2)
-		bcsc->flttype = PastixDouble;
-    /* Compute P * b */
-    rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
-                                    PastixDirBackward, bcsc->gN, nrhs, *b, ldb );
-    if( rc != PASTIX_SUCCESS ) {
-        return rc;
-    }
+		/* Compute P * x */
+		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
+										PastixDirForward, bcsc->gN, nrhs, *x, ldx );
+		if( rc != PASTIX_SUCCESS ) {
+			return rc;
+		}
+		/* Performe the iterative refinement */
+		rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx );
+		if( rc != PASTIX_SUCCESS ) {
+			return rc;
+		}
+		/* Compute P * b */
+		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
+										PastixDirBackward, bcsc->gN, nrhs, *b, ldb );
+		if( rc != PASTIX_SUCCESS ) {
+			return rc;
+		}
 
-    /* Compute P * x */
-    rc = pastix_subtask_applyorder( pastix_data, bcsc->flttype,
-                                    PastixDirBackward, bcsc->gN, nrhs, *x, ldx );
-    if( rc != PASTIX_SUCCESS ) {
-        return rc;
-    }
-	if(pastix_data->iparm[IPARM_GPU_NBR] == 1){
-#ifdef PASTIX_WITH_CUDA
-		destroyLightSpMV();
-#endif
-	}
-	else{
+		/* Compute P * x */
+		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
+										PastixDirBackward, bcsc->gN, nrhs, *x, ldx );
+		if( rc != PASTIX_SUCCESS ) {
+			return rc;
+		}
+		if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
+	#ifdef PASTIX_WITH_CUDA
+			destroyLightSpMV();
+			
+			gpu_base = gpu_device->memory->base;
+
+/*
+			zone_free( gpu_device->memory, spm->valuesGPU );
+			zone_free( gpu_device->memory, spm->colptrGPU );
+			zone_free( gpu_device->memory, spm->rowptrGPU );*/
+			/*
+			cudaFree(spm->valuesGPU);
+			cudaFree(spm->colptrGPU);
+			cudaFree(spm->rowptrGPU);
+			*/
+			spm->valuesGPU = NULL;
+			spm->colptrGPU = NULL;
+			spm->rowptrGPU = NULL;
+	#endif
+		}
+		
 		if( spm->mtxtype == SpmGeneral ){
 			bcsc->Uvalues = tmpBcscValues;
 		}
 		else{
 			bcsc->Lvalues = bcsc->Uvalues = tmpBcscValues;
 		}
+		
+		//iparm[IPARM_GPU_NBR] = GPUtemp;
+
 	}
-	iparm[IPARM_GPU_NBR] = GPUtemp;
+    clockStop(timer);
+
+    pastix_data->dparm[DPARM_REFINE_TIME] = clockVal(timer);
+    if (iparm[IPARM_VERBOSE] > PastixVerboseNot) {
+        pastix_print( 0, 0, OUT_TIME_REFINE,
+                      pastix_data->dparm[DPARM_REFINE_TIME] );
+    }
 
     (void)n;
     return PASTIX_SUCCESS;

@@ -277,7 +277,6 @@ bcsc_init_centralized(       spmatrix_t     *spm,
     pastix_int_t  itercol, itercblk;
     pastix_int_t  cblknbr  = solvmtx->cblknbr;
     pastix_int_t  eltnbr   = spm->gNexp;
-    pastix_int_t *col2cblk = NULL;
 
     bcsc->mtxtype = spm->mtxtype;
     bcsc->flttype = spm->flttype;

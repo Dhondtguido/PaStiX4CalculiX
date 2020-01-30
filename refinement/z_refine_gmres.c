@@ -43,7 +43,7 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
+pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b)
 {
     struct z_solver     solver; 
     Clock               refine_clk;
@@ -142,7 +142,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
         /* Compute r0 = b - A * x */
         solver.copy( pastix_data, n, b, gmVi );
         if ( normx > 0. ) {
-            solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
+            solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi );
         }
 
         /* Compute resid = ||r0||_f */
@@ -188,7 +188,7 @@ pastix_int_t z_gmres_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_
 
             /* v_{i+1} = A (M^{-1} v_{i}) = A w_{i} */
             gmVi += n;
-            solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
+            solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi );
 
             /* Classical Gram-Schmidt */
             for (j=0; j<=i; j++)

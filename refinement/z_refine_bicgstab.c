@@ -43,7 +43,7 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_bicgstab_smp (pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
+pastix_int_t z_bicgstab_smp (pastix_data_t *pastix_data, void *x, void *b)
 {
     struct z_solver     solver;
     pastix_int_t        n;
@@ -97,7 +97,7 @@ pastix_int_t z_bicgstab_smp (pastix_data_t *pastix_data, void *x, void *b, spmat
     /* r = b - Ax */
     solver.copy( pastix_data, n, b, gradr );
     if ( normx > 0. ) {
-        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr );
     }
     normr = solver.norm( pastix_data, n, gradr );
 
@@ -122,7 +122,7 @@ pastix_int_t z_bicgstab_smp (pastix_data_t *pastix_data, void *x, void *b, spmat
         }
 
         /* v = Ay */
-        solver.spmv( pastix_data, PastixNoTrans, 1.0, grady, 0., gradv, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, 1.0, grady, 0., gradv );
 
         /* alpha = (r, r2) / (v, r2) */
         solver.dot( pastix_data, n, gradv, gradr2, &alpha );
@@ -140,7 +140,7 @@ pastix_int_t z_bicgstab_smp (pastix_data_t *pastix_data, void *x, void *b, spmat
         }
 
         /* t = Az */
-        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradz, 0., gradt, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradz, 0., gradt );
 
         /* w = (M-1t, M-1s) / (M-1t, M-1t) */
         /* grad2 = M-1t */

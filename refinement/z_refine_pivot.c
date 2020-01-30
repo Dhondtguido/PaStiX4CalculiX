@@ -44,8 +44,7 @@
 pastix_int_t
 z_pivot_smp( pastix_data_t *pastix_data,
              void *x,
-             void *b,
-             spmatrix_t *spm )
+             void *b)
 {
     struct z_solver     solver;
     Clock               t0, t3, refine_clk;
@@ -85,7 +84,7 @@ z_pivot_smp( pastix_data_t *pastix_data,
     {
         /* Compute r = b - A * x */
         solver.copy( pastix_data, n, b, r );
-        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., r, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., r );
 
         /*
          * berr should be equal to the componentwise backward error in the literature:

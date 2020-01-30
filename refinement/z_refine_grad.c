@@ -43,7 +43,7 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
+pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b)
 {
     struct z_solver     solver;
     pastix_int_t        n;
@@ -87,7 +87,7 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t
     /* Compute r0 = b - A * x */
     solver.copy( pastix_data, n, b, gradr );
     if ( normx > 0. ) {
-        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gradr );
     }
     normr = solver.norm( pastix_data, n, gradr );
     resid_b = normr / normb;
@@ -108,7 +108,7 @@ pastix_int_t z_grad_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t
         nb_iter++;
 
         /* grad2 = A * p */
-        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradp, 0., grad2, NULL );
+        solver.spmv( pastix_data, PastixNoTrans, 1.0, gradp, 0., grad2 );
 
         /* alpha = <r, z> / <Ap, p> */
         solver.dot( pastix_data, n, gradr, gradz, &beta );

@@ -79,7 +79,7 @@ z_bcsc_spmv_check( spm_trans_t          trans,
     bvec_zlapmr( 1, PastixDirBackward, pastix_data->bcsc->gN, 1, yd, pastix_data->bcsc->gN, pastix_data->ordemesh->permtab );
     bvec_zlapmr( 1, PastixDirBackward, pastix_data->bcsc->gN, 1, x,  pastix_data->bcsc->gN, pastix_data->ordemesh->permtab );
 
-    bcsc_zspmv( pastix_data, (pastix_trans_t)trans, alpha, x, beta, yd, NULL );
+    bcsc_zspmv( pastix_data, (pastix_trans_t)trans, alpha, x, beta, yd );
 
     bvec_zlapmr( 1, PastixDirBackward, pastix_data->bcsc->gN, 1, yd, pastix_data->bcsc->gN, pastix_data->ordemesh->peritab );
     bvec_zlapmr( 1, PastixDirBackward, pastix_data->bcsc->gN, 1, x,  pastix_data->bcsc->gN, pastix_data->ordemesh->peritab );

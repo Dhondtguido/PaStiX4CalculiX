@@ -316,10 +316,10 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
 		pastix_data->LUbufferSize = pastix_data->solvmatr->coefnbr * 1.1;
 	}
 	
-	if(bcsc->flttype == PastixFloat)
+	/*if(bcsc->flttype == PastixFloat)
 		memset( pastix_data->L, 0, pastix_data->solvmatr->coefnbr * sizeof(float) );
 	else
-		memset( pastix_data->L, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );
+		memset( pastix_data->L, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );*/
 	
 	if(pastix_data->csc->mtxtype == SpmGeneral){
 		if(pastix_data->U == NULL){
@@ -336,10 +336,10 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
 					MALLOC_INTERN( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double );
 			}
 		}
-		if(bcsc->flttype == PastixFloat)
+		/*if(bcsc->flttype == PastixFloat)
 			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(float) );
 		else
-			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );
+			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(double) );*/
 	}
 	
     pastix_int_t counter = 0;

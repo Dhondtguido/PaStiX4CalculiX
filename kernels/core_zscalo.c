@@ -71,8 +71,7 @@ int calls_zscalo_cpu = 0;
  *
  ******************************************************************************/
 int
-core_zscalo( pastix_trans_t            trans,
-             pastix_int_t              M,
+core_zscalo( pastix_int_t              M,
              pastix_int_t              N,
              const pastix_complex64_t *A,
              pastix_int_t              lda,
@@ -81,17 +80,11 @@ core_zscalo( pastix_trans_t            trans,
              pastix_complex64_t       *B,
              pastix_int_t              ldb )
 {
-    pastix_complex64_t alpha;
     pastix_int_t i, j;
 
 //printf("in core_zscalo\n");
 
 #if !defined(NDEBUG)
-    if ((trans < PastixNoTrans)   ||
-        (trans > PastixConjTrans))
-    {
-        return -1;
-    }
 
     if (M < 0) {
         return -2;
@@ -146,8 +139,7 @@ core_zscalo( pastix_trans_t            trans,
  *
  *******************************************************************************/
 void
-cpucblk_zscalo( pastix_trans_t      trans,
-                SolverCblk         *cblk,
+cpucblk_zscalo( SolverCblk         *cblk,
                 pastix_complex64_t *LD )
 {
     const SolverBlok *blok, *lblk;
@@ -197,7 +189,7 @@ cpucblk_zscalo( pastix_trans_t      trans,
                 ldb = M;
 
                 /* Compute B = LD */
-                core_zscalo( trans, M, N,
+                core_zscalo( M, N,
                              L, ldl, D, ldd,
                              B, ldb );
             }
@@ -210,7 +202,7 @@ cpucblk_zscalo( pastix_trans_t      trans,
                 M = blok_rownbr( blok );
 
                 /* Compute B = LD */
-                core_zscalo( trans, M, N,
+                core_zscalo( M, N,
                              L  + blok->coefind, M, D, ldd,
                              LD + blok->coefind, M );
             }
@@ -224,7 +216,7 @@ cpucblk_zscalo( pastix_trans_t      trans,
             B   = LD + blok->coefind;
             ldb = cblk->stride;
 
-            core_zscalo( trans, M, N, L + blok->coefind, ldl, D, ldd, B, ldb );
+            core_zscalo( M, N, L + blok->coefind, ldl, D, ldd, B, ldb );
         }
     }
 
@@ -271,8 +263,7 @@ cpucblk_zscalo( pastix_trans_t      trans,
  *
  *******************************************************************************/
 void
-cpublok_zscalo( pastix_trans_t            trans,
-                SolverCblk               *cblk,
+cpublok_zscalo( SolverCblk               *cblk,
                 pastix_int_t              blok_m,
                 const pastix_complex64_t *A,
                 const pastix_complex64_t *D,
@@ -319,7 +310,7 @@ cpublok_zscalo( pastix_trans_t            trans,
             }
 
             /* Compute B = op(A) * D */
-            core_zscalo( trans, M, N,
+            core_zscalo( M, N,
                          lA, M, D, ldd, lB, M );
         }
     }
@@ -330,7 +321,7 @@ cpublok_zscalo( pastix_trans_t            trans,
             lB  = B + blok->coefind - offset;
             M   = blok_rownbr(blok);
 
-            core_zscalo( trans, M, N,
+            core_zscalo( M, N,
                          lA, M, D, ldd, lB, M );
         }
     }

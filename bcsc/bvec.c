@@ -15,6 +15,18 @@
 #include "common.h"
 #include "bvec.h"
 
+
+#include <parsec.h>
+#include <parsec/data.h>
+#include <parsec/data_distribution.h>
+#if defined(PASTIX_WITH_CUDA)
+#include <parsec/devices/cuda/dev_cuda.h>
+#endif
+#include "/ya/ya165/ya16551/x/mfaverge-parsec-b580d208094e/parsec/utils/zone_malloc.h"
+
+extern gpu_device_t* gpu_device;
+extern char* gpu_base;
+
 /**
  *******************************************************************************
  *
@@ -58,9 +70,13 @@ void *bvec_malloc( size_t size )
  *******************************************************************************/
 void *bvec_malloc_cuda( size_t size )
 {
+	
+	
 #ifdef PASTIX_WITH_CUDA
-    void *x = NULL;
-    cudaMalloc(&x, sizeof(char) * size);
+    void *x = gpu_base;
+    //x = zone_malloc(gpu_device->memory, sizeof(char) * size);
+    //cudaMalloc(&x, sizeof(char) * size);
+    gpu_base += size;
     return x;
 #endif
 }
@@ -98,8 +114,10 @@ void bvec_free( void *x )
  *******************************************************************************/
 void bvec_free_cuda( void *x )
 {
+	(void) x;/*
 #ifdef PASTIX_WITH_CUDA
-    cudaFree(x);
-#endif
+    cudaFree( x );
+    //zone_free( gpu_device->memory, x );
+#endif*/
 }
 

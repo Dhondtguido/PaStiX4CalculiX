@@ -72,7 +72,7 @@ EXTERNC void createLightSpMV(int64_t m, int64_t nnz, int64_t* drowptr, int64_t* 
 		printf("Error while scanning for GPU\n");
 	
 	spmv = new SpMVDoubleWarp(opt);
-	cudaDeviceSetCacheConfig (cudaFuncCachePreferL1);
+	//cudaDeviceSetCacheConfig (cudaFuncCachePreferL1);
 	spmv->loadData();
 }
 

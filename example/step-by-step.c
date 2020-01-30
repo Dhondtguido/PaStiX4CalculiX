@@ -52,7 +52,7 @@ int main (int argc, char **argv)
      * Read the sparse matrix with the driver
      */
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( driver, filename, spm, iparm );
+    spmReadDriver( driver, filename, spm );
     free( filename );
 
     spmPrintInfo( spm, stdout );
@@ -130,7 +130,7 @@ int main (int argc, char **argv)
              * Solve the linear system
              */
             pastix_task_solve( pastix_data, nrhs, x, spm->n );
-            pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n, spm );
+            pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
 
             if ( check ) {
                 rc |= spmCheckAxb( dparm[DPARM_EPSILON_REFINEMENT], nrhs, spm, x0, spm->n, b, spm->n, x, spm->n );

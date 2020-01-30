@@ -46,13 +46,13 @@
  * @return Number of iterations
  *
  *******************************************************************************/
-pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmatrix_t *spm)
+pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b)
 {
     struct z_solver     solver; 
     Clock               refine_clk;
     pastix_complex64_t *gmHi, *gmH;
     pastix_complex64_t *gmVi, *gmV;
-    pastix_complex64_t *gmWi, *gmW, *gmWi_host;
+    pastix_complex64_t *gmWi, *gmW, *gmWi_host = NULL;
     pastix_complex64_t *gmcos, *gmsin;
     pastix_complex64_t *gmG;
 #if defined(PASTIX_DEBUG_GMRES)
@@ -60,7 +60,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 #endif
     pastix_complex64_t  tmp;
     pastix_complex64_t*  tmp_ptr;
-    pastix_complex64_t *d_b, *d_x;
+    pastix_complex64_t *d_b = NULL, *d_x = NULL;
     pastix_fixdbl_t     t0, t3;
     double              eps, resid, resid_b;
     double              norm, normb, normx;
@@ -69,7 +69,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
     int                 outflag, inflag;
     int                 savemem = 0;
     int                 precond = 1;
-
+	spmatrix_t 		   *spm = pastix_data->csc;
     memset( &solver, 0, sizeof(struct z_solver) );
     z_refine_init( &solver, pastix_data );
 
@@ -188,7 +188,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 #endif
 			}
 			else{
-				solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi, NULL );
+				solver.spmv( pastix_data, PastixNoTrans, -1., x, 1., gmVi );
 			}
         }
         
@@ -279,7 +279,7 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 #endif
 			}
 			else{
-				solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi, NULL );
+				solver.spmv( pastix_data, PastixNoTrans, 1.0, gmWi, 0., gmVi );
 			}
             
             /* Classical Gram-Schmidt */
@@ -331,15 +331,15 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 				
 				for (j=0; j<i;j++)
 				#if defined(PRECISION_z) ||defined(PRECISION_d)
-					cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (double*)(gmcos+j), gmsin+j);
+					cublasZrot(*(pastix_data->cublas_handle), 1, (cuDoubleComplex*) gmHi+j, 1, (cuDoubleComplex*) gmHi+j+1, 1, (double*)(gmcos+j), (cuDoubleComplex*) gmsin+j);
 				#else
-					cublasZrot(*(pastix_data->cublas_handle), 1, gmHi+j, 1, gmHi+j+1, 1, (float*)(gmcos+j), gmsin+j);
+					cublasZrot(*(pastix_data->cublas_handle), 1, (cuDoubleComplex*) gmHi+j, 1, (cuDoubleComplex*) gmHi+j+1, 1, (float*)(gmcos+j), (cuDoubleComplex*) gmsin+j);
 				#endif
 				
 			#if defined(PRECISION_z) ||defined(PRECISION_d)
-				cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (double*)(gmcos+i), gmsin+i); 
+				cublasZrotg(*(pastix_data->cublas_handle), (cuDoubleComplex*) gmHi+i, (cuDoubleComplex*) gmHi+i+1, (double*)(gmcos+i), (cuDoubleComplex*) gmsin+i); 
 			#else
-				cublasZrotg(*(pastix_data->cublas_handle), gmHi+i, gmHi+i+1, (float*)(gmcos+i), gmsin+i); 
+				cublasZrotg(*(pastix_data->cublas_handle), (cuDoubleComplex*) gmHi+i, (cuDoubleComplex*) gmHi+i+1, (float*)(gmcos+i), (cuDoubleComplex*) gmsin+i); 
 			#endif 
 				/* Update the residuals (See p. 168, eq 6.35) */
 				cudaMemcpy(gmG+i+1, gmG+i, sizeof(pastix_complex64_t), cudaMemcpyDeviceToDevice);
@@ -348,10 +348,10 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
 			#else
 				cuDoubleComplex negone = -1.0;
 			#endif
-				cublasZscal(*(pastix_data->cublas_handle), 1, gmsin+i, gmG+i+1, 1);
-				cublasZscal(*(pastix_data->cublas_handle), 1, gmcos+i, gmG+i, 1);
+				cublasZscal(*(pastix_data->cublas_handle), 1, (cuDoubleComplex*) gmsin+i, (cuDoubleComplex*) gmG+i+1, 1);
+				cublasZscal(*(pastix_data->cublas_handle), 1, (cuDoubleComplex*) gmcos+i, (cuDoubleComplex*) gmG+i, 1);
 				cublasSetPointerMode(*(pastix_data->cublas_handle), CUBLAS_POINTER_MODE_HOST);
-				cublasZscal(*(pastix_data->cublas_handle), 1, &negone, gmG+i+1, 1);
+				cublasZscal(*(pastix_data->cublas_handle), 1, (cuDoubleComplex*) (&negone), (cuDoubleComplex*) gmG+i+1, 1);
 				cudaMemcpy(&tmp, gmG+i+1, sizeof(pastix_complex64_t), cudaMemcpyDeviceToHost);
 #endif
 			}
@@ -402,11 +402,11 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b, spmat
         /* Compute y_m = H_m^{-1} g_m (See p. 169) */
         if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
 #ifdef PASTIX_WITH_CUDA
-			cublasZtrsv(*(pastix_data->cublas_handle), CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, i+1, gmH, im1, gmG, 1);
+			cublasZtrsv(*(pastix_data->cublas_handle), CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, i+1, (cuDoubleComplex*) gmH, im1, (cuDoubleComplex*) gmG, 1);
 #endif
 		}
 		else{
-			cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, i+1, gmH, im1, gmG, 1 );
+			cblas_ztrsv( CblasColMajor, CblasUpper, CblasNoTrans, CblasNonUnit, i+1, (cuDoubleComplex*) gmH, im1, (cuDoubleComplex*) gmG, 1 );
 		}
 
         /**

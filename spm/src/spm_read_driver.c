@@ -61,8 +61,7 @@
 int
 spmReadDriver( spm_driver_t  driver,
                const char   *filename,
-               spmatrix_t   *spm,
-               spm_int_t *iparm )
+               spmatrix_t   *spm)
 {
     spmInit(spm);
 
@@ -82,7 +81,7 @@ spmReadDriver( spm_driver_t  driver,
         break;
 
     case SpmDriverMM:
-        readMM( filename, spm, iparm);
+        readMM( filename, spm);
         break;
 
     case SpmDriverLaplacian:

@@ -63,7 +63,7 @@ int  core_zrqrcp( double tol, pastix_int_t maxrank, int refine, pastix_int_t nb,
 int  core_ztradd( pastix_uplo_t uplo, pastix_trans_t trans, pastix_int_t M, pastix_int_t N,
                   pastix_complex64_t alpha, const pastix_complex64_t *A, pastix_int_t LDA,
                   pastix_complex64_t beta,        pastix_complex64_t *B, pastix_int_t LDB);
-int  core_zscalo( pastix_trans_t trans, pastix_int_t M, pastix_int_t N,
+int  core_zscalo( pastix_int_t M, pastix_int_t N,
                   const pastix_complex64_t *A, pastix_int_t lda,
                   const pastix_complex64_t *D, pastix_int_t ldd,
                   pastix_complex64_t *B, pastix_int_t ldb );
@@ -132,7 +132,7 @@ void cpucblk_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t 
                       pastix_trans_t trans, pastix_diag_t diag, SolverCblk *cblk,
                       const pastix_complex64_t *A, pastix_complex64_t *C,
                       SolverMatrix *solvmtx );
-void cpucblk_zscalo ( pastix_trans_t trans, SolverCblk *cblk, pastix_complex64_t *LD );
+void cpucblk_zscalo ( SolverCblk *cblk, pastix_complex64_t *LD );
 
 void cpublok_zgemmsp( pastix_coefside_t sideA, pastix_coefside_t sideB, pastix_trans_t trans,
                       const SolverCblk *cblk, SolverCblk *fcblk,
@@ -144,8 +144,7 @@ void cpublok_ztrsmsp( pastix_coefside_t coef, pastix_side_t side, pastix_uplo_t 
                       SolverCblk *cblk, pastix_int_t blok_m,
                       const pastix_complex64_t *A, pastix_complex64_t *C,
                       const pastix_lr_t *lowrank );
-void cpublok_zscalo ( pastix_trans_t trans,
-                      SolverCblk *cblk, pastix_int_t blok_m,
+void cpublok_zscalo ( SolverCblk *cblk, pastix_int_t blok_m,
                       const pastix_complex64_t *A, const pastix_complex64_t *D, pastix_complex64_t *B );
 
 /**

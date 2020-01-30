@@ -129,39 +129,7 @@ d_readMM( FILE *file,
 
     return SPM_SUCCESS;
 }
-int
-s_readMM( FILE *file,
-          spmatrix_t *spm )
-{
-    float       *valptr;
-    double       *valptrDouble;
-    spm_int_t *colptr;
-    spm_int_t *rowptr;
-    spm_int_t i;
-    long row, col;
-    float re;
 
-    spm->values = malloc( spm->nnz * sizeof(float) );
-
-    colptr = spm->colptr;
-    rowptr = spm->rowptr;
-    valptr = (float*)(spm->values);
-
-    for (i=0; i<spm->nnz; i++, colptr++, rowptr++, valptr++, valptrDouble++)
-    {
-        if (3 != fscanf(file,"%ld %ld %g\n", &row, &col, &re))
-        {
-            fprintf(stderr, "readmm: erro while reading matrix file (line %ld)\n", (long)i);
-            return SPM_ERR_IO;
-        }
-
-        *rowptr = (spm_int_t)row;
-        *colptr = (spm_int_t)col;
-        *valptr = re;
-    }
-
-    return SPM_SUCCESS;
-}
 /**
  *******************************************************************************
  *
@@ -240,8 +208,7 @@ p_readMM( FILE *file,
  *******************************************************************************/
 int
 readMM( const char   *filename,
-        spmatrix_t *spm,
-        spm_int_t *iparm )
+        spmatrix_t *spm )
 {
     MM_typecode matcode;
     FILE *file;
@@ -266,14 +233,7 @@ readMM( const char   *filename,
         spm->flttype = SpmComplex64;
     }
     else if (mm_is_real(matcode)) {
-		if(iparm[66] == SpmDouble){
-			spm->flttype = SpmDouble;}
-		else if(iparm[66] == SpmFloat){
-			spm->flttype = SpmFloat;}
-		else{
-			fprintf(stderr,"readmm: Expected float or double.\n");
-			return SPM_ERR_IO;
-		}
+        spm->flttype = SpmDouble;
     }
     else if (mm_is_pattern(matcode)) {
         spm->flttype = SpmPattern;
@@ -326,10 +286,6 @@ readMM( const char   *filename,
 
     case SpmDouble:
         rc = d_readMM(file, spm);
-        break;
-
-    case SpmFloat:
-        rc = s_readMM(file, spm);
         break;
 
     case SpmPattern:

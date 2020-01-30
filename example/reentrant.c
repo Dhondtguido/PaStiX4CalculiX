@@ -63,7 +63,7 @@ static void *solve_smp(void *arg)
      * Read the sparse matrix with the driver
      */
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( param.driver, param.filename, spm, param.iparm );
+    spmReadDriver( param.driver, param.filename, spm );
 
     spmPrintInfo( spm, stdout );
 
@@ -143,7 +143,7 @@ static void *solve_smp(void *arg)
      * Solve the linear system (and perform the optional refinement)
      */
     pastix_task_solve( pastix_data, nrhs, x, spm->n );
-    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n, spm );
+    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
 
     if ( check )
     {

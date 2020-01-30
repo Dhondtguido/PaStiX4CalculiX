@@ -25,7 +25,7 @@ void convertArrayToFloat(     spm_int_t n, const double *A, void **B );
 
 int readHB   ( const char *filename, spmatrix_t *spm );
 int readIJV  ( const char *filename, spmatrix_t *spm );
-int readMM   ( const char *filename, spmatrix_t *spm, spm_int_t *iparm );
+int readMM   ( const char *filename, spmatrix_t *spm);
 int readDMM  ( const char *filename, spmatrix_t *spm );
 int readPETSC( const char *filename, spmatrix_t *spm );
 //int readCSCD ( const char *filename, spmatrix_t *spm, void **rhs, MPI_Comm spm_comm );

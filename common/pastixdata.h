@@ -72,7 +72,7 @@ struct pastix_data_s {
     void            *parsec;             /**< PaRSEC context if available                                         */
     void            *starpu;             /**< StarPU context if available                                         */
 
-    const spmatrix_t *csc;               /**< Pointer to the user csc structure used as input                     */
+    spmatrix_t *csc;               /**< Pointer to the user csc structure used as input                     */
 
     pastix_graph_t  *graph;              /**< Symmetrized graph of the problem used within ordering
                                               and symbolic factorization steps.                                   */

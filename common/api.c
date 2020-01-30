@@ -200,11 +200,7 @@ pastixWelcome( const pastix_data_t *pastix )
                                    ((pastix->iparm[IPARM_TASKS2D_LEVEL] <  0) ? ((long)pastix->iparm[IPARM_TASKS2D_WIDTH]) :
                                                                                -((long)pastix->iparm[IPARM_TASKS2D_LEVEL])),
                   /* Block size */ (long)pastix->iparm[IPARM_MIN_BLOCKSIZE],
-                                   (long)pastix->iparm[IPARM_MAX_BLOCKSIZE],
-                  /* Model CPU  */ pastix->cpu_models->name,
-                  /* Model GPU  */ pastix->gpu_models->name,
-                  /* Strategy   */ ((pastix->iparm[IPARM_COMPRESS_WHEN] == PastixCompressNever) ? "No compression" :
-                                    (pastix->iparm[IPARM_COMPRESS_WHEN] == PastixCompressWhenBegin) ? "Memory Optimal" : "Just-In-Time") );
+                                   (long)pastix->iparm[IPARM_MAX_BLOCKSIZE]);
 
 
     if ( pastix->iparm[IPARM_COMPRESS_WHEN] != PastixCompressNever ) {
@@ -372,8 +368,8 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
-    iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 32 * 1024;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 90;
+    iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 16 * 1024;
 
     /* Compression */
     iparm[IPARM_COMPRESS_MIN_WIDTH]    = 120;

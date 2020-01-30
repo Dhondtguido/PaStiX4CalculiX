@@ -71,7 +71,7 @@ int main (int argc, char **argv)
                       NULL, &driver, &filename );
 
     spm = malloc( sizeof( spmatrix_t ) );
-    spmReadDriver( driver, filename, spm, iparm );
+    spmReadDriver( driver, filename, spm );
     free(filename);
 
     ret = spmCheckAndCorrect( spm, &spm2 );
