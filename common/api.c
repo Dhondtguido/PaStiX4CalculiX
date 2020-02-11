@@ -358,7 +358,7 @@ pastixInitParam( pastix_int_t *iparm,
     /* Refinement */
     iparm[IPARM_REFINEMENT]            = PastixRefineGMRES;
     iparm[IPARM_NBITER]                = 0;
-    iparm[IPARM_ITERMAX]               = 250;
+    iparm[IPARM_ITERMAX]               = 30;
     iparm[IPARM_GMRES_IM]              = 25;
 
     /* Context */
@@ -521,6 +521,12 @@ apiInitMPI( pastix_data_t *pastix,
     (void)comm;
 }
 
+void pastixAllocMemory(void** ptr, size_t size, pastix_int_t gpu){
+	if(*ptr != NULL)
+		memFreeHost((*ptr), gpu);
+	MALLOC_HOST((*ptr), size, char, gpu);
+}
+
 /**
  *******************************************************************************
  *
@@ -681,9 +687,21 @@ pastixInitWithAffinity( pastix_data_t **pastix_data,
 
     pastix->bcsc       = NULL;
     pastix->solvmatr   = NULL;
-    if(!iparm[IPARM_REUSE_LU]){
+    if(iparm[IPARM_REUSE_LU] != 1){
+		if(iparm[IPARM_REUSE_LU] == 2){
+			memFreeHost(pastix->L, iparm[IPARM_GPU_NBR]);
+			memFreeHost(pastix->U, iparm[IPARM_GPU_NBR]);
+			memFreeHost(pastix->colptrPERM, iparm[IPARM_GPU_NBR]);
+			memFreeHost(pastix->rowptrPERM, iparm[IPARM_GPU_NBR]);
+		}
 		pastix->L = NULL;
 		pastix->U = NULL;
+		
+		
+		pastix->nBound = 0;
+		pastix->nnzBound = 0;
+		pastix->colptrPERM   = NULL;
+		pastix->rowptrPERM   = NULL;
 	}
 
     pastix->cpu_models = NULL;

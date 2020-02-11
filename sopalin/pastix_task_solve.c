@@ -528,6 +528,7 @@ pastix_task_solve( pastix_data_t *pastix_data,
                    pastix_int_t nrhs, void *b, pastix_int_t ldb )
 {
     pastix_bcsc_t *bcsc;
+	pastix_int_t i;
 
     /*
      * Check parameters
@@ -538,13 +539,13 @@ pastix_task_solve( pastix_data_t *pastix_data,
     }
 
     bcsc  = pastix_data->bcsc;
-	if ( pastix_data->iparm[IPARM_GPU_NBR] > 0){
+	if ( pastix_data->iparm[IPARM_GPU_NBR] > 0 && pastix_data->iparm[IPARM_FLOAT] == 2){
 #ifdef PASTIX_WITH_CUDA	
 		spmatrix_t* spm = pastix_data->csc;
 		if(gpu_device == NULL){
 			pastix_int_t ndevices = parsec_devices_enabled();
 			ndevices -= 2;
-			for(pastix_int_t i = 0; i < ndevices; i++) {
+			for(i = 0; i < ndevices; i++) {
 				if( NULL == (gpu_device = (gpu_device_t*)parsec_devices_get(i+2)) ) continue;
 			}
 		}
@@ -559,15 +560,15 @@ pastix_task_solve( pastix_data_t *pastix_data,
 			//spm->valuesGPU = zone_malloc(gpu_device->memory, spm->nnzexp * sizeof(double));
 			spm->valuesGPU = gpu_base;
 			gpu_base += spm->nnzexp * sizeof(double);
+			cudaMemcpyAsync(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice, pastix_data->streamGPU);
 		}
-		cudaMemcpyAsync(spm->valuesGPU, spm->values, spm->nnzexp * sizeof(double), cudaMemcpyHostToDevice, pastix_data->streamGPU);
 		
 		if(spm->colptrGPU == NULL){
 			//cudaMalloc((void**) &(spm->colptrGPU), (spm->n+1) * sizeof(pastix_int_t));
 			//spm->colptrGPU = zone_malloc(gpu_device->memory, (spm->n+1) * sizeof(pastix_int_t));
 			spm->colptrGPU = gpu_base;
 			gpu_base += (spm->n+1) * sizeof(pastix_int_t);
-			cudaMemcpyAsync(spm->colptrGPU, spm->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+			cudaMemcpyAsync(spm->colptrGPU, pastix_data->colptrPERM, (spm->n+1) * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
 		}
 		
 		if(spm->rowptrGPU == NULL){
@@ -575,7 +576,7 @@ pastix_task_solve( pastix_data_t *pastix_data,
 			//spm->rowptrGPU = zone_malloc(gpu_device->memory, spm->nnzexp * sizeof(pastix_int_t));
 			spm->rowptrGPU = gpu_base;
 			gpu_base += spm->nnzexp * sizeof(pastix_int_t);
-			cudaMemcpyAsync(spm->rowptrGPU, spm->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
+			cudaMemcpyAsync(spm->rowptrGPU, pastix_data->rowptrPERM, spm->nnzexp * sizeof(pastix_int_t), cudaMemcpyHostToDevice, pastix_data->streamGPU);
 		}
 		
 #endif

@@ -475,5 +475,8 @@ pastix_int_t z_gmres_gpu_smp(pastix_data_t *pastix_data, void *x, void *b)
     solver.free(dbg_G);
 #endif
 
+	if(iters >= itermax)
+		return -1;
+
     return iters;
 }

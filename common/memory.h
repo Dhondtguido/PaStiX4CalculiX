@@ -62,15 +62,18 @@ static inline void *pastix_malloc_func( size_t size,
 #endif
 
 #ifdef PASTIX_WITH_CUDA
-#define memFreeHost(ptr) cudaFree((void*)(ptr))
-#define memFreeHost_null(ptr) do			\
+#define memFreeHost(ptr, gpu) gpu ? cudaFree((void*)(ptr)) : free(ptr)
+#define memFreeHost_null(ptr, gpu) do			\
 	{					\
-	    cudaFree( ptr );			\
+		if(gpu)							\
+			cudaFree( ptr );			\
+		else           					\
+			free(ptr);				\
 	    (ptr) = NULL;			\
 	} while(0)
 #else
-#define memFreeHost(ptr) free((void*)(ptr))
-#define memFreeHost_null(ptr) do			\
+#define memFreeHost(ptr, gpu) free((void*)(ptr))
+#define memFreeHost_null(ptr, gpu) do			\
 	{					\
 	    memFree( ptr );			\
 	    (ptr) = NULL;			\
@@ -90,12 +93,15 @@ static inline void *pastix_malloc_func( size_t size,
     } while(0)
 
 #ifdef PASTIX_WITH_CUDA
-#define MALLOC_HOST(ptr, size, type)                          \
+#define MALLOC_HOST(ptr, size, type, gpu)                          \
     do {                                                        \
-        cudaMallocHost((void**)&ptr, (size) * sizeof(type)) ;          \
+		if(gpu)													\
+			cudaMallocHost((void**)&ptr, (size) * sizeof(type)) ;          \
+		else            										\
+			ptr = (type*)memAlloc((size) * sizeof(type)) ;          \
     } while(0)
 #else
-#define MALLOC_HOST(ptr, size, type)                          \
+#define MALLOC_HOST(ptr, size, type, gpu)                          \
     do {                                                        \
         ptr = (type*)memAlloc((size) * sizeof(type)) ;          \
     } while(0)

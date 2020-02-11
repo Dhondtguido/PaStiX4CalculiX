@@ -116,8 +116,8 @@ int main (int argc, char **argv)
      * Solve the linear system (and perform the optional refinement)
      */
     pastix_task_solve( pastix_data, nrhs, x, spm->n );
-    pastix_task_refine( pastix_data, spm->n, nrhs, b, spm->n, x, spm->n );
-
+    pastix_task_refine( pastix_data, spm->n, nrhs, &b, spm->n, &x, spm->n );
+/*
     if ( check )
     {
         rc = spmCheckAxb( dparm[DPARM_EPSILON_REFINEMENT], nrhs, spm, x0, spm->n, b, spm->n, x, spm->n );
@@ -126,7 +126,7 @@ int main (int argc, char **argv)
             free( x0 );
         }
     }
-
+*/
     spmExit( spm );
     free( spm );
     free( x );

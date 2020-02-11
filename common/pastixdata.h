@@ -98,6 +98,11 @@ struct pastix_data_s {
 	void 			*L;
 	void 			*U;
 	pastix_int_t	 LUbufferSize;
+	    
+    spm_int_t      nBound;
+    spm_int_t	   nnzBound;
+    spm_int_t     *colptrPERM;  /**< List of indirections to rows for each vertex [+baseval]        */
+    spm_int_t     *rowptrPERM;  /**< List of edges for each vertex [+baseval]                       */
 
     /* Backup for old pastix interface */
     void            *b;

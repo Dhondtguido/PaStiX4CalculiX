@@ -32,7 +32,8 @@ void permute_z_Matrix(pastix_int_t		n,
 					  pastix_int_t* 	peri, 
 					  pastix_int_t* 	colptrOut, 
 					  pastix_int_t* 	rowptrOut, 
-					  cuDoubleComplex*  valuesOut);
+					  cuDoubleComplex*  valuesOut,
+					  pastix_int_t* 	sorttab);
 					  
 /**
  * @addtogroup bcsc_internal
@@ -49,8 +50,8 @@ void bcsc_zinit_centralized( const spmatrix_t     *spm,
                                    pastix_bcsc_t  *bcsc );
                                    
 void bcsc_zsort( pastix_bcsc_t *bcsc,
-            pastix_int_t        **rowtab,
-            pastix_complex64_t  **valtab,
+            pastix_int_t        *rowtab,
+            pastix_complex64_t  *valtab,
             pastix_int_t  		**sorttab);
             
 /**

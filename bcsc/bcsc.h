@@ -48,7 +48,8 @@ struct pastix_bcsc_s {
     pastix_int_t *sorttab;
 };
 
-double bcscInit(       spmatrix_t     *spm,
+double bcscInit( 	    pastix_data_t *pastix_data,
+					   spmatrix_t     *spm,
                  const pastix_order_t *ord,
                  const SolverMatrix   *solvmtx,
                  pastix_int_t          initAt,
@@ -69,7 +70,8 @@ bcsc_init_centralized_coltab( const spmatrix_t     *spm,
                                     pastix_bcsc_t  *bcsc );
 
 void
-bcsc_init_centralized(       spmatrix_t     *spm,
+bcsc_init_centralized( 		  pastix_data_t *pastix_data,
+							 spmatrix_t     *spm,
                        const pastix_order_t *ord,
                        const SolverMatrix   *solvmtx,
                              pastix_int_t    initAt,

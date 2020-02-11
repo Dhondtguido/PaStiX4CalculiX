@@ -48,20 +48,34 @@ void permute_z_Matrix(pastix_int_t		n,
 					  pastix_int_t* 	peri, 
 					  pastix_int_t* 	colptrOut, 
 					  pastix_int_t* 	rowptrOut, 
-					  cuDoubleComplex*  valuesOut){
+					  cuDoubleComplex*  valuesOut,
+					  pastix_int_t* 	sorttab){
 	
 	colptrOut[0] = 1;
 	for(pastix_int_t i = 0; i < n; i++){
 		colptrOut[i+1] = colptrOut[i] + colptrIn[peri[i]+1] - colptrIn[peri[i]];
 	}
 	
-	#pragma omp parallel for
-	for(pastix_int_t i = 0; i < n; i++){
-		for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
-			pastix_int_t target = colptrOut[perm[i]] - 1 + j - colptrIn[i] + 1;
-			
-			rowptrOut[target] = perm[rowptrIn[j]-1] + 1;
-			valuesOut[target] = valuesIn[j];
+	if(sorttab == NULL){
+		#pragma omp parallel for
+		for(pastix_int_t i = 0; i < n; i++){
+			for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+				pastix_int_t target = colptrOut[perm[i]] - 1 + j - colptrIn[i] + 1;
+				
+				rowptrOut[target] = perm[rowptrIn[j]-1] + 1;
+				valuesOut[target] = valuesIn[j];
+			}
+		}
+	}
+	else{
+		#pragma omp parallel for
+		for(pastix_int_t i = 0; i < n; i++){
+			for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+				pastix_int_t target = sorttab[colptrOut[perm[i]] - 1 + j - colptrIn[i] + 1];
+				
+				rowptrOut[target] = perm[rowptrIn[j]-1] + 1;
+				valuesOut[target] = valuesIn[j];
+			}
 		}
 	}
 }
@@ -465,8 +479,8 @@ bcsc_zinit_At( const spmatrix_t     *spm,
  *******************************************************************************/
 
 void bcsc_zsort( pastix_bcsc_t *bcsc,
-            pastix_int_t        **rowtab,
-            pastix_complex64_t  **valtab,
+            pastix_int_t        *rowtab,
+            pastix_complex64_t  *valtab,
             pastix_int_t  		**sorttab)
 {
     bcsc_cblk_t *blockcol;
@@ -504,7 +518,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 				}
 				printf("\n _______________ \n");
 */
-				cppSort( (*sorttab) + blockcol->coltab[itercol], (*sorttab) + blockcol->coltab[itercol+1], *rowtab );
+				cppSort( (*sorttab) + blockcol->coltab[itercol], (*sorttab) + blockcol->coltab[itercol+1], rowtab );
 				/*
 				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
 					printf("rows[%d] = %ld\n", i, permedRows[i]);
@@ -522,15 +536,25 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 	}
     #pragma omp parallel for
     for(int i = 0; i < bcsc->numElements; i++){
-		permedValues[i] = (*valtab)[(*sorttab)[i]];
-		permedRows[i] = (*rowtab)[(*sorttab)[i]];
+		permedValues[i] = valtab[(*sorttab)[i]];
+		permedRows[i] = rowtab[(*sorttab)[i]];
 	}
+	
+	memcpy(rowtab, permedRows, sizeof(pastix_int_t) * bcsc->numElements);
+	memcpy(valtab, permedValues, sizeof(pastix_complex64_t) * bcsc->numElements); 
     
-    memFree_null(*rowtab);
-    memFree_null(*valtab);
+    memFree(permedRows);
+    memFree(permedValues);
     
-    *rowtab = permedRows;
-    *valtab = permedValues;
+    pastix_int_t* inverseSorttab;
+    MALLOC_INTERN(inverseSorttab, bcsc->numElements, pastix_int_t);
+    
+    #pragma omp parallel for
+    for (int i = 0; i < bcsc->numElements; i++)  
+		inverseSorttab[(*sorttab)[i]] = i;
+		
+	free(*sorttab);
+	*sorttab = inverseSorttab;
     
    /* blockcol = bcsc->cscftab;
     for (itercblk=0; itercblk<bcsc->cscfnbr; itercblk++, blockcol++)
@@ -603,7 +627,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
     bcsc_restore_coltab( bcsc );
 
     /* Sort the csc */
-    bcsc_zsort( bcsc, &(bcsc->rowtab), (pastix_complex64_t**)(&(bcsc->Lvalues)), &(bcsc->sorttab) );
+    bcsc_zsort( bcsc, bcsc->rowtab, (pastix_complex64_t*)(bcsc->Lvalues), &(bcsc->sorttab) );
 
     if ( spm->mtxtype == SpmGeneral ) {
 	/* A^t is not required if only refinement is performed */
@@ -623,7 +647,7 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
             bcsc_restore_coltab( bcsc );
 
 	    /* Sort the transposed csc */
-	    bcsc_zsort( bcsc, &trowtab, (pastix_complex64_t**)(&(bcsc->Uvalues)), &(bcsc->sorttab) );
+	    bcsc_zsort( bcsc, trowtab, (pastix_complex64_t*)(bcsc->Uvalues), &(bcsc->sorttab) );
 	    memFree( trowtab );
         }
     }
@@ -632,3 +656,4 @@ bcsc_zinit_centralized( const spmatrix_t     *spm,
         bcsc->Uvalues = bcsc->Lvalues;
     }
 }
+

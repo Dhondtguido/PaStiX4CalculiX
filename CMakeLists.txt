@@ -50,7 +50,12 @@ SET(CMAKE_C_FLAGS $ENV{SCRIPT_OUT})
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -fopenmp -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/include -D_GNU_SOURCE ")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/targets/x86_64-linux/include -D_GNU_SOURCE ")
 
-
+SET(CMAKE_AR  "gcc-ar")
+#SET(CMAKE_RANLIB "gcc-ranlib")
+SET(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>")
+SET(CMAKE_C_ARCHIVE_FINISH   true)
+SET(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcs <TARGET> <LINK_FLAGS> <OBJECTS>")
+SET(CMAKE_CXX_ARCHIVE_FINISH   true)
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH  FALSE)
 

@@ -137,9 +137,12 @@ pastix_subtask_spm2bcsc( pastix_data_t *pastix_data,
     /*
      * Compute the norm of A, to scale the epsilon parameter for pivoting
      */
+    if ( (spm->flttype != PastixFloat) && (spm->flttype != PastixComplex32) )
     {
+		pastix_int_t temp = spm->flttype;
+		spm->flttype = PastixDouble;
         pastix_data->dparm[ DPARM_A_NORM ] = spmNorm( SpmFrobeniusNorm, spm );
-        if (pastix_data->iparm[IPARM_VERBOSE] > PastixVerboseNo ) {
+        //if (pastix_data->iparm[IPARM_VERBOSE] > PastixVerboseNo ) {
 			
 #ifndef SCRIPT_OUT
             pastix_print( 0, 0,
@@ -151,7 +154,8 @@ pastix_subtask_spm2bcsc( pastix_data_t *pastix_data,
                           pastix_data->dparm[ DPARM_A_NORM ] );
 #endif
 
-        }
+        //}
+        spm->flttype = temp;
     }
 
     /*
@@ -165,7 +169,8 @@ pastix_subtask_spm2bcsc( pastix_data_t *pastix_data,
 	}
 
 
-    time = bcscInit( spm,
+    time = bcscInit( pastix_data,
+					 spm,
                      pastix_data->ordemesh,
                      pastix_data->solvmatr,
                      (pastix_data->iparm[IPARM_FACTORIZATION] == PastixFactLU), /*&& (! pastix_data->iparm[IPARM_ONLY_REFINE]) )*/
@@ -222,6 +227,7 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
     pastix_lr_t   *lr;
     Clock timer;
     int mtxtype;
+    pastix_int_t i;
 
     /*
      * Check parameters
@@ -282,37 +288,19 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
 			printf("REALLOCATING BUFFER!\n");
 			printf("REALLOCATING BUFFER!\n");
 			printf("REALLOCATING BUFFER!\n");
-			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
-				memFreeHost_null(pastix_data->L);
-			}
-			else{
-				memFree_null(pastix_data->L);
-			}
+			memFreeHost_null(pastix_data->L, pastix_data->iparm[IPARM_GPU_NBR]);
 		}
 		if(pastix_data->U != NULL){
-			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
-				memFreeHost_null(pastix_data->U);
-			}
-			else{
-				memFree_null(pastix_data->U);
-			}
+			memFreeHost_null(pastix_data->U, pastix_data->iparm[IPARM_GPU_NBR]);
 		}
 	}
 
     if(pastix_data->L == NULL){
-		if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
-			if(bcsc->flttype == PastixFloat)
-				MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, float );
-			else
-				MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, double );
-		}
+		if(bcsc->flttype == PastixFloat)
+			MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, float, pastix_data->iparm[IPARM_GPU_NBR] );
 		else
-		{
-			if(bcsc->flttype == PastixFloat)
-				MALLOC_INTERN( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, float );
-			else
-				MALLOC_INTERN( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, double );
-		}
+			MALLOC_HOST( pastix_data->L, pastix_data->solvmatr->coefnbr * 1.1, double, pastix_data->iparm[IPARM_GPU_NBR] );
+
 		pastix_data->LUbufferSize = pastix_data->solvmatr->coefnbr * 1.1;
 	}
 	
@@ -323,18 +311,11 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
 	
 	if(pastix_data->csc->mtxtype == SpmGeneral){
 		if(pastix_data->U == NULL){
-			if(pastix_data->iparm[IPARM_GPU_NBR] > 0){
-				if(bcsc->flttype == PastixFloat)
-					MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, float );
-				else
-					MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double );
-			}
-			else{
-				if(bcsc->flttype == PastixFloat)
-					MALLOC_INTERN( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, float );
-				else
-					MALLOC_INTERN( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double );
-			}
+			if(bcsc->flttype == PastixFloat)
+				MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, float, pastix_data->iparm[IPARM_GPU_NBR] );
+			else
+				MALLOC_HOST( pastix_data->U, pastix_data->solvmatr->coefnbr * 1.1, double, pastix_data->iparm[IPARM_GPU_NBR] );
+
 		}
 		/*if(bcsc->flttype == PastixFloat)
 			memset( pastix_data->U, 0, pastix_data->solvmatr->coefnbr * sizeof(float) );
@@ -343,7 +324,7 @@ pastix_subtask_bcsc2ctab( pastix_data_t *pastix_data )
 	}
 	
     pastix_int_t counter = 0;
-    for( int i = 0; i < pastix_data->solvmatr->cblknbr; i++){
+    for( i = 0; i < pastix_data->solvmatr->cblknbr; i++){
 		if(bcsc->flttype == PastixFloat)
 			cblk[i].lcoeftab = pastix_data->L + counter * sizeof(float);
 		else
@@ -518,8 +499,9 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
         else {
             threshold = pastix_data->dparm[ DPARM_EPSILON_MAGN_CTRL ] * pastix_data->dparm[DPARM_A_NORM];
         }
-        // deactivate static pivoting
-        threshold = 0;
+        // deactivate static pivoting for fp32
+        if ( (bcsc->flttype == PastixFloat) || (bcsc->flttype == PastixComplex32) )
+			threshold = 0;
         
         sopalin_data.solvmtx->diagthreshold = threshold;
         sopalin_data.solvmtx->nbpivots      = 0;

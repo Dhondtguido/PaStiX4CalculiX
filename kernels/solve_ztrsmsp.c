@@ -540,7 +540,6 @@ solve_cblk_ztrsmsp_backward( pastix_solv_mode_t  mode,
         if ( (fcbk->cblktype & CBLK_IN_SCHUR) && (mode == PastixSolvModeInterface) ) {
             continue;
         }
-
         solve_blok_zgemm( cs, PastixRight, tA, nrhs,
                           cblk, blok, fcbk,
                           b + cblk->lcolidx, ldb,

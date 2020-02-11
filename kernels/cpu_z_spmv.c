@@ -28,12 +28,13 @@ cpu_z_spmv(		pastix_int_t n,
 				pastix_complex64_t *y,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind){
-	
-    for( pastix_int_t i=0; i<n; i++)
+	pastix_int_t i;
+	pastix_int_t j;
+    for(  i=0; i<n; i++)
     {
 		pastix_complex64_t dot = 0.0;
 		
-        for( pastix_int_t j=rowptr[i]-1; j<rowptr[i+1]-1; j++)
+        for(  j=rowptr[i]-1; j<rowptr[i+1]-1; j++)
         {
             dot += A[j] * x[ colind[j] -1 ];
         }
@@ -52,12 +53,13 @@ cpu_z_spmv_perm(pastix_int_t n,
 				pastix_int_t* rowptr,
 				pastix_int_t* colind,
 				pastix_int_t* perm){
-	
-    for( pastix_int_t i=0; i<n; i++)
+	pastix_int_t i;
+	pastix_int_t j;
+    for(  i=0; i<n; i++)
     {
 		pastix_complex64_t dot = 0.0;
 		
-        for( pastix_int_t j=rowptr[i]-1; j<rowptr[i+1]-1; j++)
+        for(  j=rowptr[i]-1; j<rowptr[i+1]-1; j++)
         {
             dot += A[j] * x[ perm[colind[j] -1] ];
         }

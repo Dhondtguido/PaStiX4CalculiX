@@ -90,6 +90,7 @@ int isched_nohwloc_world_size()
 
 int isched_nohwloc_bind_on_core_index(int cpu)
 {
+	return cpu;
     if( -1 == cpu ) { /* Don't try binding if not required */
         return -1;
     }
@@ -142,6 +143,7 @@ int isched_nohwloc_bind_on_core_index(int cpu)
 
 int isched_nohwloc_unbind()
 {
+	return PASTIX_SUCCESS;
     if ( !topo_initialized ) {
         isched_nohwloc_init();
     }

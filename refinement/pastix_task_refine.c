@@ -180,6 +180,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 	for(i=0; i<nrhs; i++, xptr += shiftx, bptr += shiftb ) {
 		pastix_int_t it;
 		it = refinefct( pastix_data, xptr, bptr);
+		if(it == -1)
+			return -1;
 		pastix_data->iparm[IPARM_NBITER] = pastix_imax( it, pastix_data->iparm[IPARM_NBITER] );
 	}
 	
@@ -245,11 +247,13 @@ pastix_task_refine( pastix_data_t *pastix_data,
 	spmatrix_t* spm = pastix_data->csc;
     pastix_int_t  *iparm = pastix_data->iparm;
     pastix_bcsc_t *bcsc  = pastix_data->bcsc;
+    char failed = 0;
     int rc;
     void* tmpBcscValues = NULL;
     double timer;
-    //char GPUtemp = iparm[IPARM_GPU_NBR];
-    //iparm[IPARM_GPU_NBR] = 0;
+    char GPUtemp = iparm[IPARM_GPU_NBR];
+    if( pastix_data->iparm[IPARM_FLOAT] == 3)
+		iparm[IPARM_GPU_NBR] = 0;
     
     if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
     {
@@ -297,7 +301,9 @@ pastix_task_refine( pastix_data_t *pastix_data,
 		}
 		/* Performe the iterative refinement */
 		rc = pastix_subtask_refine( pastix_data, n, nrhs, b, ldb, x, ldx );
-		if( rc != PASTIX_SUCCESS ) {
+		if( rc == -1)
+			failed = 1;
+		else if( rc != PASTIX_SUCCESS ) {
 			return rc;
 		}
 		/* Compute P * b */
@@ -341,7 +347,8 @@ pastix_task_refine( pastix_data_t *pastix_data,
 			bcsc->Lvalues = bcsc->Uvalues = tmpBcscValues;
 		}
 		
-		//iparm[IPARM_GPU_NBR] = GPUtemp;
+		if( pastix_data->iparm[IPARM_FLOAT] == 3)
+			iparm[IPARM_GPU_NBR] = GPUtemp;
 
 	}
     clockStop(timer);
@@ -353,5 +360,8 @@ pastix_task_refine( pastix_data_t *pastix_data,
     }
 
     (void)n;
+    
+    if(failed)
+		return -1;
     return PASTIX_SUCCESS;
 }

@@ -66,6 +66,7 @@ int isched_hwloc_world_size()
 
 int isched_hwloc_bind_on_core_index(int cpu_index)
 {
+	return cpu_index;
     hwloc_obj_t      core;     /* Hwloc object    */
     hwloc_cpuset_t   cpuset;   /* Hwloc cpuset    */
 
@@ -121,6 +122,7 @@ int isched_hwloc_bind_on_core_index(int cpu_index)
 
 int isched_hwloc_unbind()
 {
+	return PASTIX_SUCCESS;
 #if defined(HAVE_HWLOC_BITMAP)
     hwloc_obj_t      obj;      /* Hwloc object    */
     assert( first_init > 0 );

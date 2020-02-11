@@ -95,7 +95,8 @@ int main (int argc, char **argv)
      * Generate the blocked csc
      */
     pastix_data->bcsc = malloc( sizeof(pastix_bcsc_t) );
-    bcscInit( spm,
+    bcscInit( pastix_data,
+			  spm,
               pastix_data->ordemesh,
               pastix_data->solvmatr,
               spm->mtxtype == SpmGeneral,

@@ -682,7 +682,7 @@ gpublok_zscalo( SolverCblk               *cblk,
 				cublasHandle_t *cublas_handle  )
 {
     const SolverBlok *fblok, *lblok, *blok;
-    pastix_int_t M, N, ldd, offset, cblk_m;
+    pastix_int_t i, M, N, ldd, offset, cblk_m;
     const cuDoubleComplex *lA;
     cuDoubleComplex *lB;
 
@@ -707,7 +707,7 @@ gpublok_zscalo( SolverCblk               *cblk,
         
         cudaMemcpyAsync(lB, lA, sizeof(cuDoubleComplex) * M * N, cudaMemcpyDeviceToDevice, stream); 
         
-        for(int i = 0; i < N; i++, lB+=M){
+        for(i = 0; i < N; i++, lB+=M){
 			cublasZscal(*cublas_handle, M, D+i*ldd, lB, 1);
 		}
        /* gpu_zscalo( trans, M, N,

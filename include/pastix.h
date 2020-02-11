@@ -73,6 +73,9 @@ void pastixInitWithAffinity( pastix_data_t **pastix_data,
                              pastix_int_t   *iparm,
                              double         *dparm,
                              const int      *bindtab );
+
+void pastixAllocMemory(void** ptr, size_t size, pastix_int_t gpu);
+                             
 void pastixFinalize ( pastix_data_t **pastix_data );
 
 /*

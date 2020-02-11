@@ -90,7 +90,8 @@ int main (int argc, char **argv)
     /**
      * Generate the blocked csc
      */
-    bcscInit( spm,
+    bcscInit( pastix_data,
+			  spm,
               pastix_data->ordemesh,
               pastix_data->solvmatr,
               spm->mtxtype == SpmGeneral, &bcsc );

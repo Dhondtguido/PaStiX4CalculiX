@@ -268,7 +268,8 @@ bcsc_init_centralized_coltab( const spmatrix_t     *spm,
  *
  *******************************************************************************/
 void
-bcsc_init_centralized(       spmatrix_t     *spm,
+bcsc_init_centralized( 		  pastix_data_t *pastix_data,
+							 spmatrix_t     *spm,
                        const pastix_order_t *ord,
                        const SolverMatrix   *solvmtx,
                              pastix_int_t    initAt,
@@ -342,24 +343,40 @@ bcsc_init_centralized(       spmatrix_t     *spm,
         fprintf(stderr, "bcsc_init_centralized: Error unknown floating type for input spm\n");
     }*/
     
-    
-    
 	double* buffer = (double*) malloc(sizeof(double) * spm->nnz);
 		
 	pastix_int_t* perm = ord->permtab;
 	pastix_int_t* peri = ord->peritab;
-	if(spm->colptrPERM != NULL)
-		free(spm->colptrPERM);
-	if(spm->rowptrPERM != NULL)
-		free(spm->rowptrPERM);
-		
-	spm->colptrPERM = (pastix_int_t*) malloc((spm->n+1) * sizeof(pastix_int_t));
-	spm->rowptrPERM = (pastix_int_t*) malloc((spm->nnzexp) * sizeof(pastix_int_t));
 	
-	permute_d_Matrix(spm->n, spm->colptr, spm->rowptr, (double*) spm->values, perm, peri, spm->colptrPERM, spm->rowptrPERM, buffer);
+	if(pastix_data->colptrPERM == NULL){
+		pastix_data->nBound = (spm->n+1) * 1.1;
+		MALLOC_HOST(pastix_data->colptrPERM, (spm->n+1) * 1.1, pastix_int_t, pastix_data->iparm[IPARM_GPU_NBR]);
+		//pastix_data->colptrPERM = (pastix_int_t*) malloc((spm->n+1) * 1.1 * sizeof(pastix_int_t));
+	}
+	if(pastix_data->rowptrPERM == NULL){
+		pastix_data->nnzBound = spm->nnz * 1.1;
+		MALLOC_HOST(pastix_data->rowptrPERM, spm->nnz * 1.1, pastix_int_t, pastix_data->iparm[IPARM_GPU_NBR]);
+		//pastix_data->rowptrPERM = (pastix_int_t*) malloc((spm->nnzexp) * 1.1 * sizeof(pastix_int_t));
+	}
+	
+	if((spm->n+1) > pastix_data->nBound){
+		memFreeHost(pastix_data->colptrPERM, pastix_data->iparm[IPARM_GPU_NBR]);
+		MALLOC_HOST(pastix_data->colptrPERM, (spm->n+1) * 1.1, pastix_int_t, pastix_data->iparm[IPARM_GPU_NBR]);
+		//pastix_data->colptrPERM = (pastix_int_t*) malloc((spm->n+1) * 1.1 * sizeof(pastix_int_t));
+		pastix_data->nBound = (spm->n+1) * 1.1;
+	}
+	
+	if((spm->nnzexp) > pastix_data->nnzBound){
+		memFreeHost(pastix_data->rowptrPERM, pastix_data->iparm[IPARM_GPU_NBR]);
+		MALLOC_HOST(pastix_data->rowptrPERM, spm->nnz * 1.1, pastix_int_t, pastix_data->iparm[IPARM_GPU_NBR]);
+		//pastix_data->rowptrPERM = (pastix_int_t*) malloc((spm->nnzexp) * 1.1 * sizeof(pastix_int_t));
+		pastix_data->nnzBound = spm->nnz * 1.1;
+	}
+		
+	permute_d_Matrix(spm->n, spm->colptr, spm->rowptr, (double*) spm->values, perm, peri, pastix_data->colptrPERM, pastix_data->rowptrPERM, buffer, bcsc->sorttab);
 
-
-	bcsc_dsort(bcsc, &(spm->rowptrPERM), &buffer, &(bcsc->sorttab));
+	if(bcsc->sorttab == NULL)
+		bcsc_dsort(bcsc, pastix_data->rowptrPERM, buffer, &(bcsc->sorttab));
 		
 	if ( bcsc->flttype == PastixFloat) {
 		#pragma omp parallel for
@@ -372,7 +389,7 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 	}
 
 	if( spm->mtxtype == SpmGeneral )
-		transpose_d_Matrix(spm->n, spm->colptrPERM, spm->rowptrPERM, buffer, (double*) spm->values);
+		transpose_d_Matrix(spm->n, pastix_data->colptrPERM, pastix_data->rowptrPERM, buffer, (double*) spm->values);
 	else
 		memcpy( spm->values, buffer, sizeof(spm->nnz) * sizeof(double));
 
@@ -398,13 +415,10 @@ bcsc_init_centralized(       spmatrix_t     *spm,
 	
 	#pragma omp parallel for
 	for(pastix_int_t i = 0; i < spm->nnz; i++){
-		bcsc->rowtab[i] = spm->rowptrPERM[i]-1;
+		bcsc->rowtab[i] = pastix_data->rowptrPERM[i]-1;
 	}
 	
 	free(buffer);
-
-    
-    
 }
 
 
@@ -442,7 +456,8 @@ bcsc_init_centralized(       spmatrix_t     *spm,
  *
  *******************************************************************************/
 double
-bcscInit(       spmatrix_t     *spm,
+bcscInit( 	    pastix_data_t *pastix_data,
+				spmatrix_t     *spm,
           const pastix_order_t *ord,
           const SolverMatrix   *solvmtx,
                 pastix_int_t    initAt,
@@ -455,7 +470,7 @@ bcscInit(       spmatrix_t     *spm,
     clockStart(time);
 
     if ( spm->loc2glob == NULL ) {
-        bcsc_init_centralized( spm, ord, solvmtx, initAt, bcsc );
+        bcsc_init_centralized( pastix_data, spm, ord, solvmtx, initAt, bcsc );
     }
     else {
         fprintf(stderr, "bcscInit: Distributed SPM not yet supported");
