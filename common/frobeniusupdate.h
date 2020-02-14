@@ -4,12 +4,12 @@
  *
  * Forumla to update frobenius norm computation in a safe manner.
  *
- * @copyright 2004-2018 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
+ * @copyright 2004-2020 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria,
  *                      Univ. Bordeaux. All rights reserved.
  *
- * @version 6.0.1
+ * @version 6.0.3
  * @author Mathieu Faverge
- * @date 2018-07-16
+ * @date 2019-12-12
  *
  */
 #ifndef _frobeniusupdate_h_
@@ -20,8 +20,8 @@
  *
  * @ingroup pastix_internal
  *
- * frobenius_update - Update the couple (scale, sumsq) with one element when
- * computing the Froebnius norm.
+ * @brief Update the couple (scale, sumsq) with one element when computing the
+ * Frobenius norm.
  *
  * The frobenius norm is equal to scale * sqrt( sumsq ), this method allows to
  * avoid overflow in the sum square computation.
@@ -40,9 +40,9 @@
  *          The value to integrate into the couple (scale, sumsq)
  *
  *******************************************************************************/
-static inline void
 #if defined(PRECISION_d) || defined(PRECISION_z)
-frobenius_update( int nb, double *scale, double *sumsq, double *value )
+static inline void
+frobenius_update( int nb, double *scale, double *sumsq, const double *value )
 {
     double absval = fabs(*value);
     double ratio;
@@ -57,8 +57,53 @@ frobenius_update( int nb, double *scale, double *sumsq, double *value )
         }
     }
 }
+
+/**
+ *******************************************************************************
+ *
+ * @ingroup pastix_internal
+ *
+ * @brief Merge together two sum square stored as a couple (scale, sumsq).
+ *
+ * The frobenius norm is equal to scale * sqrt( sumsq ), this method allows to
+ * avoid overflow in the sum square computation.
+ *
+ *******************************************************************************
+ *
+ * @param[in] scl_in
+ *           The scale factor of the first couple to merge
+ *
+ * @param[in] ssq_in
+ *           The sumsquare factor of the first couple to merge
+ *
+ * @param[inout] scl_out
+ *           On entry, the scale factor of the second couple to merge
+ *           On exit, the updated scale factor.
+ *
+ * @param[inout] ssq_out
+ *           The sumsquare factor of the second couple to merge
+ *           On exit, the updated sumsquare factor.
+ *
+ *******************************************************************************/
+static inline void
+frobenius_merge( double scl_in, double ssq_in,
+                 double *scl_out, double *ssq_out )
+{
+    double ratio;
+    if ( (*scl_out) < scl_in ) {
+        ratio  = (*scl_out) / scl_in;
+        *ssq_out = (*ssq_out) * ratio * ratio + ssq_in;
+        *scl_out = scl_in;
+    }
+    else {
+        ratio  = scl_in / (*scl_out);
+        *ssq_out = (*ssq_out) + ssq_in * ratio * ratio;
+    }
+}
+
 #elif defined(PRECISION_s) || defined(PRECISION_c)
-frobenius_update( int nb, float *scale, float *sumsq, float *value )
+static inline void
+frobenius_update( int nb, float *scale, float *sumsq, const float *value )
 {
     float absval = fabs(*value);
     float ratio;
@@ -73,6 +118,23 @@ frobenius_update( int nb, float *scale, float *sumsq, float *value )
         }
     }
 }
+
+static inline void
+frobenius_merge( float scl_in, float ssq_in,
+                 float *scl_out, float *ssq_out )
+{
+    float ratio;
+    if ( (*scl_out) < scl_in ) {
+        ratio  = (*scl_out) / scl_in;
+        *ssq_out = (*ssq_out) * ratio * ratio + ssq_in;
+        *scl_out = scl_in;
+    }
+    else {
+        ratio  = scl_in / (*scl_out);
+        *ssq_out = (*ssq_out) + ssq_in * ratio * ratio;
+    }
+}
 #endif
 
 #endif /* _frobeniusupdate_h_ */
+

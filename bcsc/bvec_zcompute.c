@@ -83,7 +83,6 @@ struct z_argument_nrm2_s
   double                    scale;
   double                    sumsq;
 };
-
 /**
  *******************************************************************************
  *
@@ -138,20 +137,12 @@ pthread_bvec_znrm2( isched_thread_t *ctx,
 #endif
     }
 
-    pastix_atomic_lock( &(arg->lock) );
-    {
-        double ratio;
-        if ( arg->scale < scale ) {
-            ratio = arg->scale / scale;
-            arg->sumsq = sumsq + arg->sumsq * ratio * ratio;
-            arg->scale = scale;
-        }
-        else {
-            ratio = scale / arg->scale;
-            arg->sumsq = sumsq * ratio * ratio + arg->sumsq;
-        }
+    /* If we computed something */
+    if ( scale != 0. ) {
+        pastix_atomic_lock( &(arg->lock) );
+        frobenius_merge( scale, sumsq, &(arg->scale), &(arg->sumsq) );
+        pastix_atomic_unlock( &(arg->lock) );
     }
-    pastix_atomic_unlock( &(arg->lock) );
 }
 
 /**

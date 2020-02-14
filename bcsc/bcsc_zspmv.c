@@ -22,7 +22,6 @@
 #include "bcsc_z.h"
 #include "solver.h"
 #include "pastix/datatypes.h"
-#include "kernels/pastix_cuda.h"
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -190,14 +189,11 @@ __bcsc_zspmv_loop( pastix_trans_t            trans,
         zspmv_Ax = __bcsc_zspmv_conjAx;
     }
 #endif /* defined(PRECISION_z) || defined(PRECISION_c) */
-else{
-	
-}
 
     for( bloc=begin; bloc<end; bloc++ )
     {
-		zspmv_Ax( bcsc, cblk, alpha, valptr, x, beta, y );
-		break;
+        zspmv_Ax( bcsc, cblk, alpha, valptr, x, beta, y );
+
         y += cblk->colnbr;
         cblk++;
     }
@@ -621,59 +617,21 @@ bcsc_zspmv_smp( const pastix_data_t      *pastix_data,
  *          The vector y.
  *
  *******************************************************************************/
- 
- 
-/**
- *******************************************************************************
- *
- * @ingroup bcsc
- *
- * @brief Compute the matrix-vector product  y = alpha * A * x + beta * y
- * (Sequential version)
- *
- * Where A is given in the bcsc format, x and y are two vectors of size n, and
- * alpha and beta are two scalars.
- *
- *******************************************************************************
- *
- * @param[in] pastix_data
- *          Provide information about bcsc
- *
- * @param[in] trans
- *          Specifies whether the matrix A from the bcsc is transposed, not
- *          transposed or conjugate transposed:
- *            = PastixNoTrans:   A is not transposed;
- *            = PastixTrans:     A is transposed;
- *            = PastixConjTrans: A is conjugate transposed.
- *
- * @param[in] alpha
- *          alpha specifies the scalar alpha
- *
- * @param[in] x
- *          The vector x.
- *
- * @param[in] beta
- *          beta specifies the scalar beta
- *
- * @param[inout] y
- *          The vector y.
- *
- *******************************************************************************/
- 
 void
 bcsc_zspmv( const pastix_data_t      *pastix_data,
             pastix_trans_t            trans,
             pastix_complex64_t        alpha,
             const pastix_complex64_t *x,
             pastix_complex64_t        beta,
-            pastix_complex64_t       *y)
+            pastix_complex64_t       *y )
 {
     pastix_int_t *iparm = pastix_data->iparm;
-    
-    if ( iparm[IPARM_SCHEDULER] == PastixSchedSequential ) {
-        bcsc_zspmv_seq( pastix_data, trans, alpha, x, beta, y );
-    }
-    else {
+
+    if ( iparm[IPARM_SCHEDULER] != PastixSchedSequential ) {
         bcsc_zspmv_smp( pastix_data, trans, alpha, x, beta, y );
     }
+    else {
+        bcsc_zspmv_seq( pastix_data, trans, alpha, x, beta, y );
+    }
 }
+

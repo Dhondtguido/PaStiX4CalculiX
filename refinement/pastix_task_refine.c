@@ -138,8 +138,8 @@ static pastix_int_t (*sopalinRefine[5][4])(pastix_data_t *pastix_data, void *x, 
 int
 pastix_subtask_refine( pastix_data_t *pastix_data,
                        pastix_int_t n, pastix_int_t nrhs,
-                             void **b, pastix_int_t ldb,
-                             void **x, pastix_int_t ldx)
+                             void *b, pastix_int_t ldb,
+                             void *x, pastix_int_t ldx)
 {
     pastix_int_t   *iparm = pastix_data->iparm;
     pastix_bcsc_t  *bcsc  = pastix_data->bcsc;
@@ -166,8 +166,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
         }
     }
     
-    void *xptr = (char *)(*x);
-	void *bptr = (char *)(*b);
+    void *xptr = (char *)(x);
+	void *bptr = (char *)(b);
 
 	pastix_int_t (*refinefct)(pastix_data_t *, void *, void *) = sopalinRefine[iparm[IPARM_REFINEMENT]][1];
 	
@@ -241,8 +241,8 @@ pastix_subtask_refine( pastix_data_t *pastix_data,
 int
 pastix_task_refine( pastix_data_t *pastix_data,
                     pastix_int_t n, pastix_int_t nrhs,
-                    void **b, pastix_int_t ldb,
-                    void **x, pastix_int_t ldx)
+                    void *b, pastix_int_t ldb,
+                    void *x, pastix_int_t ldx)
 {
 	spmatrix_t* spm = pastix_data->csc;
     pastix_int_t  *iparm = pastix_data->iparm;
@@ -288,14 +288,14 @@ pastix_task_refine( pastix_data_t *pastix_data,
 
 		/* Compute P * b */
 		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
-										PastixDirForward, bcsc->gN, nrhs, *b, ldb );
+										PastixDirForward, bcsc->gN, nrhs, b, ldb );
 		if( rc != PASTIX_SUCCESS ) {
 			return rc;
 		}
 
 		/* Compute P * x */
 		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
-										PastixDirForward, bcsc->gN, nrhs, *x, ldx );
+										PastixDirForward, bcsc->gN, nrhs, x, ldx );
 		if( rc != PASTIX_SUCCESS ) {
 			return rc;
 		}
@@ -308,14 +308,14 @@ pastix_task_refine( pastix_data_t *pastix_data,
 		}
 		/* Compute P * b */
 		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
-										PastixDirBackward, bcsc->gN, nrhs, *b, ldb );
+										PastixDirBackward, bcsc->gN, nrhs, b, ldb );
 		if( rc != PASTIX_SUCCESS ) {
 			return rc;
 		}
 
 		/* Compute P * x */
 		rc = pastix_subtask_applyorder( pastix_data, PastixDouble,
-										PastixDirBackward, bcsc->gN, nrhs, *x, ldx );
+										PastixDirBackward, bcsc->gN, nrhs, x, ldx );
 		if( rc != PASTIX_SUCCESS ) {
 			return rc;
 		}
