@@ -120,6 +120,7 @@ spmInit( spmatrix_t *spm )
     spm->rowptr   = NULL;
     spm->loc2glob = NULL;
     spm->values   = NULL;
+    spm->rowPrediction = NULL;
     
     spm->colptrGPU   = NULL;
     spm->rowptrGPU   = NULL;
@@ -275,6 +276,10 @@ spmExit( spmatrix_t *spm )
     if(spm->rowptr != NULL) {
         free(spm->rowptr);
         spm->rowptr = NULL;
+    }
+    if(spm->rowPrediction != NULL) {
+        free(spm->rowPrediction);
+        spm->rowPrediction = NULL;
     }/*
     if(spm->values != NULL) {
         free(spm->values);
@@ -1423,44 +1428,6 @@ spmScalMatrix(double alpha, spmatrix_t* spm)
     case SpmDouble:
     default:
         d_spmScal(alpha, spm);
-    }
-}
-
-/**
- *******************************************************************************
- *
- * @brief Degrade the spm.
- *
- * A = alpha * A
- *
- *******************************************************************************
- *
- * @param[in] alpha
- *           The scaling parameter.
- *
- * @param[inout] spm
- *          The sparse matrix to scal.
- *
- *******************************************************************************/
-void
-spmDegradeMatrix(spmatrix_t* spm)
-{
-    switch(spm->flttype)
-    {
-    case SpmPattern:
-        break;
-    case SpmFloat:
-        s_spmDegrade(spm);
-        break;
-    case SpmComplex32:
-        c_spmDegrade(spm);
-        break;
-    case SpmComplex64:
-        z_spmDegrade(spm);
-        break;
-    case SpmDouble:
-    default:
-        d_spmDegrade(spm);
     }
 }
 

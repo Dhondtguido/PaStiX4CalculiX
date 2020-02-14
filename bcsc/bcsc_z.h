@@ -21,6 +21,7 @@
 void transpose_z_Matrix(pastix_int_t 		n,
 						pastix_int_t* 		colptrIn, 
 						pastix_int_t* 		rowptrIn, 
+						pastix_int_t**		rowPrediction,
 						cuDoubleComplex*	valuesIn, 
 						cuDoubleComplex* 	valuesOut);
 

@@ -388,13 +388,13 @@ bcsc_init_centralized( 		  pastix_data_t *pastix_data,
 		memcpy(bcsc->Lvalues, buffer, spm->nnz * sizeof(double));
 	}
 
-	if( spm->mtxtype == SpmGeneral )
-		transpose_d_Matrix(spm->n, pastix_data->colptrPERM, pastix_data->rowptrPERM, buffer, (double*) spm->values);
+	if( pastix_data->iparm[IPARM_FACTORIZATION] == PastixFactLU )
+		transpose_d_Matrix(spm->n, pastix_data->colptrPERM, pastix_data->rowptrPERM, &(spm->rowPrediction), buffer, (double*) spm->values);
 	else
-		memcpy( spm->values, buffer, sizeof(spm->nnz) * sizeof(double));
+		memcpy( spm->values, buffer, spm->nnz * sizeof(double));
 
 	if(initAt){
-		if ( spm->mtxtype == SpmGeneral ) {
+		if ( pastix_data->iparm[IPARM_FACTORIZATION] == PastixFactLU ) {
 			if(!bcsc->Uvalues)
 				MALLOC_INTERN( bcsc->Uvalues, valuesize * pastix_size_of( bcsc->flttype ), char );
 				

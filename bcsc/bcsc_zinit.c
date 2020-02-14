@@ -24,20 +24,30 @@
 
 void transpose_z_Matrix(pastix_int_t 		n,
 						pastix_int_t* 		colptrIn, 
-						pastix_int_t* 		rowptrIn, 
+						pastix_int_t* 		rowptrIn,
+						pastix_int_t**		rowPrediction,
 						cuDoubleComplex*	valuesIn, 
 						cuDoubleComplex* 	valuesOut){
 	
-	pastix_int_t* temp = (pastix_int_t*) calloc(n, sizeof(pastix_int_t));
-	
-	for(int i = 0; i < n; i++){
-		for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
-			pastix_int_t target = colptrIn[rowptrIn[j]-1]-1 + (temp[rowptrIn[j]-1]++);
-			valuesOut[target] = valuesIn[j];
+	if(*rowPrediction == NULL){
+		printf("compute Prediction\n");
+		pastix_int_t* temp = (pastix_int_t*) calloc(n, sizeof(pastix_int_t));
+		MALLOC_INTERN(*rowPrediction, colptrIn[n]-1, pastix_int_t);
+		for(int i = 0; i < n; i++){
+			for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+				(*rowPrediction)[j] = temp[rowptrIn[j]-1]++;
+			}
 		}
+		free(temp);	
 	}
 	
-	free(temp);
+	#pragma omp parallel for
+	for(int i = 0; i < n; i++){
+		for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+			pastix_int_t target = colptrIn[rowptrIn[j]-1]-1 + (*rowPrediction)[j];
+			valuesOut[target] = valuesIn[j];
+		}
+	}	
 }
 
 void permute_z_Matrix(pastix_int_t		n,
