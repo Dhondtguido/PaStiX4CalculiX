@@ -36,7 +36,7 @@
 #if defined(PASTIX_WITH_CUDA)
 #include <parsec/devices/cuda/dev_cuda.h>
 #endif
-#include "/ya/ya165/ya16551/x/mfaverge-parsec-b580d208094e/parsec/utils/zone_malloc.h"
+#include "parsec/utils/zone_malloc.h"
 
 extern gpu_device_t* gpu_device;
 extern char* gpu_base;
