@@ -30,7 +30,6 @@ void transpose_z_Matrix(pastix_int_t 		n,
 						cuDoubleComplex* 	valuesOut){
 	
 	if(*rowPrediction == NULL){
-		printf("compute Prediction\n");
 		pastix_int_t* temp = (pastix_int_t*) calloc(n, sizeof(pastix_int_t));
 		MALLOC_INTERN(*rowPrediction, colptrIn[n]-1, pastix_int_t);
 		for(int i = 0; i < n; i++){

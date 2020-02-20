@@ -539,7 +539,8 @@ pastix_task_solve( pastix_data_t *pastix_data,
     }
 
     bcsc  = pastix_data->bcsc;
-	if ( pastix_data->iparm[IPARM_GPU_NBR] > 0 && pastix_data->iparm[IPARM_FLOAT] == 2){
+
+	if ( pastix_data->iparm[IPARM_GPU_NBR] > 0 && getenv("PASTIX_REFINE_GPU") != NULL && (*(getenv("PASTIX_REFINE_GPU"))) == '1'){
 #ifdef PASTIX_WITH_CUDA	
 		spmatrix_t* spm = pastix_data->csc;
 		if(gpu_device == NULL){

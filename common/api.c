@@ -368,7 +368,7 @@ pastixInitParam( pastix_int_t *iparm,
 
     /* GPU */
     iparm[IPARM_GPU_NBR]               = 0;
-    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 90;
+    iparm[IPARM_GPU_MEMORY_PERCENTAGE] = 95;
     iparm[IPARM_GPU_MEMORY_BLOCK_SIZE] = 16 * 1024;
 
     /* Compression */

@@ -676,11 +676,22 @@ pastix_task_numfact( pastix_data_t *pastix_data,
     }
     
 #ifdef PASTIX_WITH_CUDA
-    printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_s_cblok_gemms, gpu_s_cblok_gemms);
-    printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_s_blok_gemms, gpu_s_blok_gemms);
-    printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_s_trsm, gpu_s_trsm);
-    
-    cpu_s_cblok_gemms = gpu_s_cblok_gemms = cpu_s_blok_gemms = gpu_s_blok_gemms = cpu_s_trsm = gpu_s_trsm = 0;
+	if(pastix_data->iparm[IPARM_FLOAT] == 2){
+
+		printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_s_cblok_gemms, gpu_s_cblok_gemms);
+		printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_s_blok_gemms, gpu_s_blok_gemms);
+		printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_s_trsm, gpu_s_trsm);
+		
+		cpu_s_cblok_gemms = gpu_s_cblok_gemms = cpu_s_blok_gemms = gpu_s_blok_gemms = cpu_s_trsm = gpu_s_trsm = 0;
+	}
+	else{
+		printf("CPU vs GPU CBLK GEMMS -> %ld vs %ld\n", cpu_d_cblok_gemms, gpu_d_cblok_gemms);
+		printf("CPU vs GPU BLK GEMMS -> %ld vs %ld\n", cpu_d_blok_gemms, gpu_d_blok_gemms);
+		printf("CPU vs GPU TRSM -> %ld vs %ld\n", cpu_d_trsm, gpu_d_trsm);
+		
+		cpu_d_cblok_gemms = gpu_d_cblok_gemms = cpu_d_blok_gemms = gpu_d_blok_gemms = cpu_d_trsm = gpu_d_trsm = 0;
+		
+	}
     
 #endif
 
