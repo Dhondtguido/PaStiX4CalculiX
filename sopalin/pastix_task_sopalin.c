@@ -502,6 +502,8 @@ pastix_subtask_sopalin( pastix_data_t *pastix_data )
         // deactivate static pivoting for fp32
         if ( (bcsc->flttype == PastixFloat) || (bcsc->flttype == PastixComplex32) )
 			threshold = 0;
+			
+		threshold = threshold / 100;
         
         sopalin_data.solvmtx->diagthreshold = threshold;
         sopalin_data.solvmtx->nbpivots      = 0;
