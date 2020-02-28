@@ -47,8 +47,9 @@ include(CheckSystem)
 # --------------------
 SET(CMAKE_EXE_LINKER_FLAGS " -lstdc++ -fopenmp -D_GNU_SOURCE ")
 SET(CMAKE_C_FLAGS $ENV{SCRIPT_OUT})
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native -fopenmp -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/include -D_GNU_SOURCE ")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -march=native -fopenmp -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/include -D_GNU_SOURCE ")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/yaprod/cae-opensource/SLE12/packages/cuda-10.1.105/targets/x86_64-linux/include -D_GNU_SOURCE ")
+SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ")
 
 SET(CMAKE_AR  "gcc-ar")
 #SET(CMAKE_RANLIB "gcc-ranlib")
@@ -102,7 +103,7 @@ option(PASTIX_GENERATE_MODEL
 
 # Internal options
 option(PASTIX_WITH_FORTRAN
-  "Enable Fortran files/interface/examples to be compiled" ON)
+  "Enable Fortran files/interface/examples to be compiled" OFF)
 
 cmake_dependent_option(PASTIX_DISTRIBUTED
  "Enable the distributed interface (requires PASTIX_WITH_MPI)" OFF "PASTIX_WITH_MPI" OFF)
