@@ -99,6 +99,7 @@ void z_refine_output_final( pastix_data_t      *pastix_data,
     (void)tf;
     (void)x;
     (void)gmresx;
+    pastix_data->dparm[DPARM_RELATIVE_ERROR] = err;
 }
 
 /**
