@@ -252,7 +252,7 @@ pastix_task_refine( pastix_data_t *pastix_data,
     void* tmpBcscValues = NULL;
     double timer;
     char GPUtemp = iparm[IPARM_GPU_NBR];
-    if(getenv("PASTIX_REFINE_GPU") != NULL && *(getenv("PASTIX_REFINE_GPU")) != '1')
+    if(getenv("PASTIX_REFINE_GPU") == NULL || *(getenv("PASTIX_REFINE_GPU")) != '1')
 		iparm[IPARM_GPU_NBR] = 0;
     
     if ( (pastix_data->schur_n > 0) && (iparm[IPARM_SCHUR_SOLV_MODE] != PastixSolvModeLocal))
@@ -347,7 +347,7 @@ pastix_task_refine( pastix_data_t *pastix_data,
 			bcsc->Lvalues = bcsc->Uvalues = tmpBcscValues;
 		}
 		
-		if(getenv("PASTIX_REFINE_GPU") != NULL && *(getenv("PASTIX_REFINE_GPU")) != '1')
+		if(getenv("PASTIX_REFINE_GPU") == NULL || *(getenv("PASTIX_REFINE_GPU")) != '1')
 			iparm[IPARM_GPU_NBR] = GPUtemp;
 
 	}
