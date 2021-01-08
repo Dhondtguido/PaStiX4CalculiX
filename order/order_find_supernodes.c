@@ -56,7 +56,7 @@ compute_subtree_size(      pastix_int_t  n,
     /* TODO pas la peine d'utiliser un tas; il suffit de parcourir iperm pour assurer
      de toujours traiter un fils avant son pere */
 
-    bzero(T, sizeof(pastix_int_t)*n);
+    memset( T, 0, sizeof(pastix_int_t) * n );
 
     for(k=0;k<n;k++)
     {
@@ -168,24 +168,27 @@ compute_post_order(      pastix_int_t n,
         assert(perm[i] <  n);
     }
 
-    bzero(invp, sizeof(pastix_int_t)*n);
-    for(i=0;i<n;i++)
+    memset( invp, 0, sizeof(pastix_int_t) * n );
+    for(i=0;i<n;i++) {
         invp[perm[i]]++;
+    }
 
     k = 0;
-    for(i=0;i<n;i++)
-        if(invp[i] != 1)
-            k++;
-    if(k>0)
+    for(i=0;i<n;i++) {
+        if(invp[i] != 1) { k++; }
+    }
+    if ( k > 0 ) {
         errorPrint("Number of errors in perm vector in postorder %ld", (long)k);
+    }
     assert(k==0);
 #endif
 
     /*
      * Compute the invp vector
      */
-    for(i=0; i<n; i++)
+    for(i=0; i<n; i++) {
         invp[perm[i]] = i;
+    }
 }
 
 /**
@@ -245,7 +248,7 @@ compute_elimination_tree(      pastix_int_t n,
         jrev[i] = -1;
 
     MALLOC_INTERN(jf, n, pastix_int_t);
-    bzero(jf, sizeof(pastix_int_t)*n);
+    memset( jf, 0, sizeof(pastix_int_t) * n );
 
     for(i=0;i<n;i++)
         father[i] = -1;
@@ -394,7 +397,7 @@ pastixOrderFindSupernodes( const pastix_graph_t *graph,
         assert(invp[i] < n);
     }
 
-    bzero(S, sizeof(pastix_int_t)*n);
+    memset( S, 0 sizeof(pastix_int_t) * n );
     for(i=0;i<n;i++)
         S[perm[i]]++;
 
@@ -430,8 +433,8 @@ pastixOrderFindSupernodes( const pastix_graph_t *graph,
 
     MALLOC_INTERN(isleaf,     n, pastix_int_t);
     MALLOC_INTERN(prev_rownz, n, pastix_int_t);
-    bzero(isleaf,     sizeof(pastix_int_t)*n);
-    bzero(prev_rownz, sizeof(pastix_int_t)*n);
+    memset(isleaf,     0, sizeof(pastix_int_t) * n );
+    memset(prev_rownz, 0, sizeof(pastix_int_t) * n );
 
     for(j=0;j<n;j++)
     {
@@ -456,7 +459,7 @@ pastixOrderFindSupernodes( const pastix_graph_t *graph,
      * Compute the number of sons of each node in the elimination tree
      * The snodetab/rangtab is computed in the workspace T.
      */
-    bzero(S, sizeof(pastix_int_t)*n);
+    memset( S, 0, sizeof(pastix_int_t) * n );
     for(i=0;i<n;i++) {
         if(father[i] != i) {
             S[father[i]]++;
