@@ -4,6 +4,7 @@ if ! [[ -d build ]]; then
 fi
 cd build
 
+<<<<<<< HEAD
 INSTALLPATH="~/pastix"
 CUDADIR="/usr/lib/cuda"
 PARSECDIR="/usr/lib/parsec"

@@ -156,7 +156,7 @@ simuInit( SimuCtrl              *simuctrl,
             timerSet(&(simuctrl->ftgttab[i].timerecv), 0.0);
             simuctrl->ftgttab[i].costsend = 0.0;
             simuctrl->ftgttab[i].costadd  = 0.0;
-            bzero(simuctrl->ftgttab[i].ftgt.infotab,FTGT_MAXINFO*sizeof(pastix_int_t));
+            memset( simuctrl->ftgttab[i].ftgt.infotab, 0, FTGT_MAXINFO * sizeof(pastix_int_t) );
             simuctrl->ftgttab[i].ftgt.infotab[FTGT_FCOLNUM] = PASTIX_INT_MAX;
             simuctrl->ftgttab[i].ftgt.infotab[FTGT_FROWNUM] = PASTIX_INT_MAX;
             simuctrl->ftgttab[i].ftgt.infotab[FTGT_CTRBNBR] = 0;

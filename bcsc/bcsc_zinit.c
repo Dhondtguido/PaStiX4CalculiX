@@ -32,8 +32,8 @@ void transpose_z_Matrix(pastix_int_t 		n,
 	if(*rowPrediction == NULL){
 		pastix_int_t* temp = (pastix_int_t*) calloc(n, sizeof(pastix_int_t));
 		MALLOC_INTERN(*rowPrediction, colptrIn[n]-1, pastix_int_t);
-		for(int i = 0; i < n; i++){
-			for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+		for(pastix_int_t i = 0; i < n; i++){
+			for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
 				(*rowPrediction)[j] = temp[rowptrIn[j]-1]++;
 			}
 		}
@@ -41,8 +41,8 @@ void transpose_z_Matrix(pastix_int_t 		n,
 	}
 	
 	#pragma omp parallel for
-	for(int i = 0; i < n; i++){
-		for(int j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
+	for(pastix_int_t i = 0; i < n; i++){
+		for(pastix_int_t j = colptrIn[i] - 1; j < colptrIn[i+1] - 1 ; j++){
 			pastix_int_t target = colptrIn[rowptrIn[j]-1]-1 + (*rowPrediction)[j];
 			valuesOut[target] = valuesIn[j];
 		}
@@ -507,7 +507,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 		MALLOC_INTERN(*sorttab, bcsc->numElements, pastix_int_t);
 		
 		#pragma omp parallel for
-		for(int i = 0; i < bcsc->numElements; i++){
+		for(pastix_int_t i = 0; i < bcsc->numElements; i++){
 			(*sorttab)[i] = i;
 		}
 		
@@ -517,23 +517,23 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 			for (itercol=0; itercol<blockcol->colnbr; itercol++)
 			{
 				/*size = blockcol->coltab[itercol+1] - blockcol->coltab[itercol];
-				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+				for(pastix_int_t i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
 					printf("sortTab[%d] = %ld\n", i, (bcsc->sortTab)[i]);
 				}
 				printf("\n _______________ \n");
 				
-				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+				for(pastix_int_t i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
 					printf("rows[%d] = %ld\n", i, (*rowtab)[i]);
 				}
 				printf("\n _______________ \n");
 */
 				cppSort( (*sorttab) + blockcol->coltab[itercol], (*sorttab) + blockcol->coltab[itercol+1], rowtab );
 				/*
-				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+				for(pastix_int_t i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
 					printf("rows[%d] = %ld\n", i, permedRows[i]);
 				}
 				printf("\n _______________ \n");
-				for(int i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
+				for(pastix_int_t i = blockcol->coltab[itercol]; i < blockcol->coltab[itercol+1]; i++){
 					printf("sortTab[%d] = %ld\n", i, (bcsc->sortTab)[i]);
 				}
 				printf("\n\n\n");
@@ -544,7 +544,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
 		}
 	}
     #pragma omp parallel for
-    for(int i = 0; i < bcsc->numElements; i++){
+    for(pastix_int_t i = 0; i < bcsc->numElements; i++){
 		permedValues[i] = valtab[(*sorttab)[i]];
 		permedRows[i] = rowtab[(*sorttab)[i]];
 	}
@@ -559,7 +559,7 @@ void bcsc_zsort( pastix_bcsc_t *bcsc,
     MALLOC_INTERN(inverseSorttab, bcsc->numElements, pastix_int_t);
     
     #pragma omp parallel for
-    for (int i = 0; i < bcsc->numElements; i++)  
+    for (pastix_int_t i = 0; i < bcsc->numElements; i++)  
 		inverseSorttab[(*sorttab)[i]] = i;
 		
 	free(*sorttab);

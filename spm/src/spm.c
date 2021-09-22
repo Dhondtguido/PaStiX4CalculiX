@@ -280,11 +280,11 @@ spmExit( spmatrix_t *spm )
     if(spm->rowPrediction != NULL) {
         free(spm->rowPrediction);
         spm->rowPrediction = NULL;
-    }/*
+    }
     if(spm->values != NULL) {
         free(spm->values);
         spm->values = NULL;
-    }*/
+    }
     if(spm->loc2glob != NULL) {
         free(spm->loc2glob);
         spm->loc2glob = NULL;
@@ -293,10 +293,10 @@ spmExit( spmatrix_t *spm )
         free(spm->dofs);
         spm->dofs = NULL;
     }
-/*
-#ifdef PASTIX_WITH_CUDA
+
+/*#ifdef PASTIX_WITH_CUDA
     if(spm->colptrGPU != NULL) {
-		gpu_device_t* gpu_device = (gpu_device_t*)parsec_devices_get(2);
+    gpu_device_t* gpu_device = (gpu_device_t*)parsec_devices_get(2);
 		zone_free( gpu_device->memory, spm->colptrGPU );
         //cudaFree(spm->colptrGPU);
         spm->colptrGPU = NULL;
