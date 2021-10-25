@@ -29,9 +29,9 @@
 #include <parsec/data_distribution.h>
 #if defined(PASTIX_WITH_CUDA)
 #include <parsec/devices/cuda/dev_cuda.h>
+#include <cuda_runtime.h>
 #endif
 
-#include <cuda_runtime.h>
 #include <cblas.h>
 #include <lapacke.h>
 
