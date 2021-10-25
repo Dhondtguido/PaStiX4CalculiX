@@ -31,11 +31,11 @@
 #include <parsec/data_distribution.h>
 #if defined(PASTIX_WITH_CUDA)
 #include <parsec/devices/cuda/dev_cuda.h>
+gpu_device_t* gpu_device = NULL;
+char* gpu_base = NULL;
 #endif
 #include "parsec/utils/zone_malloc.h"
 
-gpu_device_t* gpu_device = NULL;
-char* gpu_base = NULL;
 
 #if defined(PASTIX_DEBUG_SOLVE)
 #include <z_spm.h>
