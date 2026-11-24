@@ -197,9 +197,25 @@ endif()
 # PaStiX depends on LAPACKE and CBLAS
 #------------------------------------
 find_package(CBLAS) # Should be REQUIRED for BLAS sequential only
+set(PASTIX_CBLAS_HEADER "include/cblas.h")
 if(CBLAS_FOUND)
     message(STATUS "cblas: ${CBLAS_INCLUDE_DIRS}")
     include_directories(${CBLAS_INCLUDE_DIRS})
+    # Use declarations from the library that supplies the CBLAS symbols.
+    if(CBLAS_WORKS)
+        set(_cblas_header_hints ${BLAS_INCLUDE_DIRS} ${BLAS_DIR} ${BLAS_DIR_FOUND})
+    else()
+        set(_cblas_header_hints ${CBLAS_INCLUDE_DIRS} ${CBLAS_DIR} ${CBLAS_DIR_FOUND})
+    endif()
+    unset(PASTIX_CBLAS_PROVIDER_HEADER CACHE)
+    find_file(PASTIX_CBLAS_PROVIDER_HEADER cblas.h
+        HINTS ${_cblas_header_hints} PATH_SUFFIXES include NO_DEFAULT_PATH)
+    if(PASTIX_CBLAS_PROVIDER_HEADER)
+        set(PASTIX_CBLAS_HEADER "${PASTIX_CBLAS_PROVIDER_HEADER}")
+        get_filename_component(PASTIX_CBLAS_PROVIDER_INCLUDE "${PASTIX_CBLAS_HEADER}" DIRECTORY)
+        include_directories(BEFORE "${PASTIX_CBLAS_PROVIDER_INCLUDE}")
+        set(PASTIX_PKGCONFIG_CBLAS_CFLAGS "-I${PASTIX_CBLAS_PROVIDER_INCLUDE}")
+    endif()
 endif()
 
 find_package(LAPACKE) # Should be also REQUIRED
@@ -521,6 +537,9 @@ STRING(COMPARE EQUAL ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} PRO
 if(NOT PROJECT_COMPILE_INPLACE)
   include_directories(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 endif(NOT PROJECT_COMPILE_INPLACE)
+if(PASTIX_CBLAS_PROVIDER_INCLUDE)
+  include_directories(BEFORE "${PASTIX_CBLAS_PROVIDER_INCLUDE}")
+endif()
 
 #Configuration header
 configure_file (
@@ -868,7 +887,7 @@ set(PASTIX_HDRS
   include/pastix/nompi.h
   include/pastix/order.h
   graph/graph.h
-  include/cblas.h
+  "${PASTIX_CBLAS_HEADER}"
   include/lapacke.h
 )
 install(FILES
